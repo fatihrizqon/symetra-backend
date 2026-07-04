@@ -82,5 +82,11 @@ func GetAuthor(ctx fiber.Ctx) (uuid.UUID, error) {
 	if !ok || claims == nil {
 		return uuid.Nil, fiber.ErrUnauthorized
 	}
-	return claims.UserID, nil
+
+	parsedUserId, err := uuid.Parse(claims.UserID.String())
+	if err != nil {
+		return uuid.Nil, err
+	}
+
+	return parsedUserId, nil
 }

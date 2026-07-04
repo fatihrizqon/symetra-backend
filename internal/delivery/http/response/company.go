@@ -23,14 +23,16 @@ type CompanyResponse struct {
 }
 
 type CompanyMemberResponse struct {
-	Id        uuid.UUID `json:"id"`
-	CompanyId uuid.UUID `json:"company_id"`
-	UserId    uuid.UUID `json:"user_id"`
-	Username  string    `json:"username"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	JoinedAt  time.Time `json:"joined_at"`
+	Id        uuid.UUID       `json:"id"`
+	CompanyId uuid.UUID       `json:"company_id"`
+	UserId    uuid.UUID       `json:"user_id"`
+	Username  string          `json:"username"`
+	Name      string          `json:"name"`
+	Email     string          `json:"email"`
+	Role      string          `json:"role"`
+	CreatedAt time.Time       `json:"created_at"`
+	UpdatedAt time.Time       `json:"updated_at"`
+	Company   CompanyResponse `json:"company"`
 }
 
 type MyCompanyResponse struct {

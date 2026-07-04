@@ -31,7 +31,9 @@ func NewCompanyHandler(serv service.ICompanyService) *CompanyHandler {
 // @Router /api/v1/companies [post]
 func (h *CompanyHandler) Create(ctx fiber.Ctx) error {
 	userId, err := util.GetAuthor(ctx)
+
 	req := request.CompanyCreateRequest{}
+
 	if err := ctx.Bind().Body(&req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -115,6 +117,7 @@ func (h *CompanyHandler) FindAll(ctx fiber.Ctx) error {
 func (h *CompanyHandler) FindById(ctx fiber.Ctx) error {
 	id := ctx.Params("id")
 	parsedId, err := uuid.Parse(id)
+
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -132,6 +135,172 @@ func (h *CompanyHandler) FindById(ctx fiber.Ctx) error {
 		Status:  fiber.StatusOK,
 		Message: "Successfully retrieved selected record.",
 		Data:    result,
+	})
+}
+
+// FindMyCompanies godoc
+// @Summary Get all companies the authenticated user belongs to
+// @Tags Company
+// @Security BearerAuth
+// @Router /api/v1/companies/mine [get]
+func (h *CompanyHandler) FindMyCompanies(ctx fiber.Ctx) error {
+	userId, err := util.GetAuthor(ctx)
+
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, err)
+		return nil
+	}
+
+	result, err := h.ICompanyService.FindMyCompanies(userId)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status: fiber.StatusOK, Message: "Successfully retrieved your companies.", Data: result,
+	})
+}
+
+// FindMembersByCompany godoc
+// @Summary Get all companies the authenticated user belongs to
+// @Tags Company
+// @Security BearerAuth
+// @Router /api/v1/companies/mine [get]
+func (h *CompanyHandler) FindMembersByCompany(ctx fiber.Ctx) error {
+	id := ctx.Params("id")
+	parsedId, err := uuid.Parse(id)
+
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	result, err := h.ICompanyService.FindMembersByCompany(parsedId)
+	if err != nil {
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
+			Status:  fiber.StatusNotFound,
+			Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Successfully retrieved selected record.",
+		Data:    result,
+	})
+}
+
+// AssignMember godoc
+// @Summary Assign member to company
+// @Tags Company
+// @Security BearerAuth
+// @Router /api/v1/companies/{id}/members [post]
+func (h *CompanyHandler) AssignMember(ctx fiber.Ctx) error {
+	authorId, err := util.GetAuthor(ctx)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, err)
+		return nil
+	}
+
+	companyId := ctx.Params("id")
+	parsedCompanyId, err := uuid.Parse(companyId)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	req := request.AssignMemberRequest{}
+	if err := ctx.Bind().Body(&req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+	req.CompanyId = parsedCompanyId
+
+	result, err := h.ICompanyService.AssignMember(req, authorId)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status: fiber.StatusOK, Message: "Successfully assigned member to company.", Data: result,
+	})
+}
+
+// UpdateMemberRole godoc
+// @Summary Update member role
+// @Tags Company
+// @Security BearerAuth
+// @Router /api/v1/companies/{id}/members/{userId}/role [put]
+func (h *CompanyHandler) UpdateMemberRole(ctx fiber.Ctx) error {
+	companyId := ctx.Params("id")
+	userId := ctx.Params("user_id")
+
+	parsedCompanyId, err := uuid.Parse(companyId)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	parsedUserId, err := uuid.Parse(userId)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	req := request.UpdateMemberRoleRequest{}
+	if err := ctx.Bind().Body(&req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+	req.CompanyId = parsedCompanyId
+	req.UserID = parsedUserId
+
+	err = h.ICompanyService.UpdateMemberRole(req)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status: fiber.StatusOK, Message: "Successfully updated member role.",
+	})
+}
+
+// RemoveMember godoc
+// @Summary Remove member from company
+// @Tags Company
+// @Security BearerAuth
+// @Router /api/v1/companies/{id}/members/{userId} [delete]
+func (h *CompanyHandler) RemoveMember(ctx fiber.Ctx) error {
+	companyId := ctx.Params("id")
+	userId := ctx.Params("user_id")
+
+	parsedCompanyId, err := uuid.Parse(companyId)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	parsedUserId, err := uuid.Parse(userId)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	err = h.ICompanyService.RemoveMember(parsedCompanyId, parsedUserId)
+	if err != nil {
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status: fiber.StatusInternalServerError, Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status: fiber.StatusOK, Message: "Successfully removed member from company.",
 	})
 }
 

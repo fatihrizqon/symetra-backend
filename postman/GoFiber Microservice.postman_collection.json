@@ -186,6 +186,25 @@
 			"name": "Users",
 			"item": [
 				{
+					"name": "Upload Avatar",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": "{{base_url}}/users/me/avatar"
+					},
+					"response": []
+				},
+				{
 					"name": "FindAll",
 					"request": {
 						"method": "GET",
@@ -317,6 +336,30 @@
 								}
 							]
 						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "Upload",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": "{{base_url}}/files/upload"
 					},
 					"response": []
 				}
@@ -677,6 +720,33 @@
 					"response": []
 				},
 				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Symetra Corp\",\n  \"legal_name\": \"Symetra Corporation\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info@symetra.com\",\n  \"industry\": \"Finance\",\n  \"currency\": \"USD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/companies"
+					},
+					"response": []
+				},
+				{
+					"name": "FindMyCompanies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/companies/mine"
+					},
+					"response": []
+				},
+				{
 					"name": "FindById",
 					"request": {
 						"method": "GET",
@@ -696,24 +766,6 @@
 								}
 							]
 						}
-					},
-					"response": []
-				},
-				{
-					"name": "Create",
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\n  \"name\": \"Symetra Corp\",\n  \"legal_name\": \"Symetra Corporation\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info@symetra.com\",\n  \"industry\": \"Finance\",\n  \"currency\": \"USD\"\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": "{{base_url}}/companies"
 					},
 					"response": []
 				},
@@ -766,6 +818,129 @@
 							"variable": [
 								{
 									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find Members By Company",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Member",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"uuid-here\",\n  \"role\": \"member\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Member Role",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members/:user_id/role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id",
+								"role"
+							],
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Member",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members/:user_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
 								}
 							]
 						}

@@ -25,6 +25,11 @@ type ICompanyRepository interface {
 	Create(entity.Company) (entity.Company, error)
 	FindAll(qp *util.QueryParams) ([]entity.Company, int, error)
 	FindById(id uuid.UUID) (entity.Company, error)
+	FindMyCompanies(userID uuid.UUID) ([]entity.CompanyMember, error)
+	FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error)
+	AssignMember(member entity.CompanyMember) (entity.CompanyMember, error)
+	UpdateMemberRole(companyId uuid.UUID, userId uuid.UUID, role string) error
+	RemoveMember(companyId uuid.UUID, userId uuid.UUID) error
 	Update(entity.Company) error
 	Delete(id uuid.UUID) error
 }
@@ -85,11 +90,66 @@ func (r *CompanyRepository) FindAll(qp *util.QueryParams) ([]entity.Company, int
 }
 
 func (r *CompanyRepository) FindById(id uuid.UUID) (entity.Company, error) {
-	var u entity.Company
-	if err := r.Db.Where("id = ?", id).First(&u).Error; err != nil {
-		return u, err
+	var c entity.Company
+	if err := r.Db.Where("id = ?", id).First(&c).Error; err != nil {
+		return c, err
 	}
-	return u, nil
+	return c, nil
+}
+
+func (r *CompanyRepository) FindMyCompanies(userId uuid.UUID) ([]entity.CompanyMember, error) {
+	var members []entity.CompanyMember
+	err := r.Db.Model(&entity.CompanyMember{}).
+		Preload("Company").
+		Where("user_id = ?", userId).
+		Find(&members).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return members, nil
+}
+
+func (r *CompanyRepository) FindMembersByCompany(companyId uuid.UUID) ([]entity.CompanyMember, error) {
+	var members []entity.CompanyMember
+	err := r.Db.Model(&entity.CompanyMember{}).
+		Preload("Company").
+		Preload("User").
+		Where("company_id = ?", companyId).
+		Find(&members).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return members, nil
+}
+
+func (r *CompanyRepository) AssignMember(member entity.CompanyMember) (entity.CompanyMember, error) {
+	if err := r.Db.Create(&member).Error; err != nil {
+		return member, err
+	}
+	err := r.Db.Preload("Company").Preload("User").First(&member, "id = ?", member.Id).Error
+	return member, err
+}
+
+func (r *CompanyRepository) UpdateMemberRole(companyId uuid.UUID, userId uuid.UUID, role string) error {
+	if err := r.Db.Model(&entity.CompanyMember{}).
+		Where("company_id = ?", companyId).
+		Where("user_id = ?", userId).
+		Update("role", role).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *CompanyRepository) RemoveMember(companyId uuid.UUID, userId uuid.UUID) error {
+	if err := r.Db.Model(&entity.CompanyMember{}).
+		Where("company_id = ?", companyId).
+		Where("user_id = ?", userId).
+		Delete(&entity.CompanyMember{}).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *CompanyRepository) Update(u entity.Company) error {

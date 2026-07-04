@@ -39,3 +39,18 @@ func (Company) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 
 	return db
 }
+
+// ─── CompanyMember ────────────────────────────────────────────────────────────
+func (CompanyMember) TableName() string { return "company_members" }
+
+type CompanyMember struct {
+	Id        uuid.UUID `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId uuid.UUID `gorm:"type:uuid;not null;index;" json:"company_id"`
+	UserId    uuid.UUID `gorm:"type:uuid;not null;index;" json:"user_id"`
+	Role      string    `gorm:"type:varchar(50);not null;default:'viewer'" json:"role"`
+	InvitedBy uuid.UUID `gorm:"type:uuid;" json:"invited_by"`
+	JoinedAt  time.Time `gorm:"autoCreateTime;" json:"joined_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;" json:"updated_at"`
+	Company   Company   `gorm:"foreignKey:CompanyId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"company,omitempty"`
+	User      User      `gorm:"foreignKey:UserId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"user,omitempty"`
+}
