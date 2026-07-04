@@ -49,6 +49,7 @@ func Bootstrap(deps *BootstrapConfig) {
 	tokenRepository := repository.NewTokenRepository(deps.DB)
 	rbacRepository := repository.NewRbacRepository(deps.DB)
 	fileRepository := repository.NewFileRepository(deps.DB)
+	companyRepository := repository.NewCompanyRepository(deps.DB)
 
 	// ── Email Service ─────────────────────────────────────────────────────────
 	emailService := service.NewEmailService(deps.Log)
@@ -59,12 +60,14 @@ func Bootstrap(deps *BootstrapConfig) {
 	appURL := cfg.GetString("web.base_url")
 	authService := service.NewAuthService(authRepository, tokenRepository, deps.Validate, emailService, appURL)
 	rbacService := service.NewRbacService(rbacRepository, userRepository, deps.Validate)
+	companyService := service.NewCompanyService(companyRepository, deps.Validate)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
 	authHandler := handler.NewAuthHandler(authService, deps.Production)
 	fileHandler := handler.NewFileHandler(fileService)
 	rbacHandler := handler.NewRbacHandler(rbacService)
+	companyHandler := handler.NewCompanyHandler(companyService)
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -90,6 +93,7 @@ func Bootstrap(deps *BootstrapConfig) {
 		FileHandler:    fileHandler,
 		RbacHandler:    rbacHandler,
 		Production:     deps.Production,
+		CompanyHandler: companyHandler,
 	}
 
 	routeConfig.Setup()

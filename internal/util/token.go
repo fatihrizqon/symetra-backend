@@ -76,3 +76,11 @@ func create(user entity.User, sessionID uuid.UUID, secret []byte, duration time.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(secret)
 }
+
+func GetAuthor(ctx fiber.Ctx) (uuid.UUID, error) {
+	claims, ok := ctx.Locals("auth").(*Claims)
+	if !ok || claims == nil {
+		return uuid.Nil, fiber.ErrUnauthorized
+	}
+	return claims.UserID, nil
+}

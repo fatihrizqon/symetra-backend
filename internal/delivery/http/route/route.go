@@ -17,6 +17,7 @@ type RouteConfig struct {
 	FileHandler    *handler.FileHandler
 	RbacHandler    *handler.RbacHandler
 	Production     bool
+	CompanyHandler *handler.CompanyHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -69,4 +70,11 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissionById)
 	rc.App.Put("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdatePermission)
 	rc.App.Delete("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeletePermission)
+
+	// Company Management
+	rc.App.Get("/api/v1/companies", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindAll)
+	rc.App.Post("/api/v1/companies", rc.RbacEngine.Require("companies.write"), rc.CompanyHandler.Create)
+	rc.App.Get("/api/v1/companies/:id", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindById)
+	rc.App.Put("/api/v1/companies/:id", rc.RbacEngine.Require("companies.write"), rc.CompanyHandler.Update)
+	rc.App.Delete("/api/v1/companies/:id", rc.RbacEngine.Require("companies.write"), rc.CompanyHandler.Delete)
 }
