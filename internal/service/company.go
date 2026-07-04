@@ -1,6 +1,8 @@
 package service
 
 import (
+	"errors"
+
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
@@ -95,6 +97,7 @@ func (s *CompanyService) FindAll(qp *util.QueryParams) ([]response.CompanyRespon
 			Email:     c.Email,
 			Industry:  c.Industry,
 			Currency:  c.Currency,
+			CreatedBy: c.CreatedBy,
 			CreatedAt: c.CreatedAt,
 			UpdatedAt: c.UpdatedAt,
 			DeletedAt: c.DeletedAt,
@@ -204,6 +207,10 @@ func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy
 		return response.CompanyMemberResponse{}, err
 	}
 
+	if req.Role == "owner" {
+		return response.CompanyMemberResponse{}, errors.New("cannot assign owner role. A company can only have one owner")
+	}
+
 	member := entity.CompanyMember{
 		CompanyId: req.CompanyId,
 		UserId:    req.UserID,
@@ -248,10 +255,33 @@ func (s *CompanyService) UpdateMemberRole(req request.UpdateMemberRoleRequest) e
 	if err := s.validate.Struct(req); err != nil {
 		return err
 	}
+	
+	if req.Role == "owner" {
+		return errors.New("cannot assign owner role. A company can only have one owner")
+	}
+
+	member, err := s.ICompanyRepository.FindMember(req.CompanyId, req.UserID)
+	if err != nil {
+		return err
+	}
+
+	if member.Role == "owner" {
+		return errors.New("cannot update the role of the company owner")
+	}
+
 	return s.ICompanyRepository.UpdateMemberRole(req.CompanyId, req.UserID, req.Role)
 }
 
 func (s *CompanyService) RemoveMember(companyId uuid.UUID, userId uuid.UUID) error {
+	member, err := s.ICompanyRepository.FindMember(companyId, userId)
+	if err != nil {
+		return err
+	}
+
+	if member.Role == "owner" {
+		return errors.New("cannot remove the company owner")
+	}
+
 	return s.ICompanyRepository.RemoveMember(companyId, userId)
 }
 
