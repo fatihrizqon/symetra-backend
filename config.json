@@ -1,0 +1,67 @@
+{
+  "app": {
+    "name": "Go Fiber Web Service"
+  },
+  "web": {
+    "base_url": "http://localhost:3000",
+    "prefork": false,
+    "port": 3000,
+    "cors": {
+      "allowed_origins": [
+        "http://localhost:5173"
+      ],
+      "allowed_methods": [
+        "GET",
+        "POST",
+        "PUT",
+        "DELETE",
+        "OPTIONS"
+      ],
+      "allowed_headers": [
+        "Origin",
+        "Content-Type",
+        "Accept",
+        "Authorization"
+      ],
+      "allow_credentials": true
+    }
+  },
+  "log": {
+    "level": 4
+  },
+  "database": {
+    "username": "postgres",
+    "password": "password",
+    "host": "localhost",
+    "port": 5432,
+    "name": "gofiber-microservice",
+    "pool": {
+      "idle": 25,
+      "max": 50,
+      "lifetime": 300
+    }
+  },
+  "notifier": {
+    "provider": "discord",
+    "webhook": "https://discord.com/api/webhooks/..."
+  },
+  "jwt": {
+    "secret": "your_secret_key",
+    "refresh_secret": "your_jwt_refresh_secret_key"
+  },
+  "smtp": {
+    "host": "smtp.gmail.com",
+    "port": 465,
+    "username": "fatihrizqon@gmail.com",
+    "password": "qjdf vnnt cbzl bcyh",
+    "sender_name": "Go Fiber App",
+    "sender_email": "fatihrizqon@gmail.com"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "",
+    "db": 0
+  },
+  "production": false
+}

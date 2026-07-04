@@ -1,0 +1,515 @@
+basePath: /
+definitions:
+  request.LoginRequest:
+    properties:
+      email:
+        example: '[EMAIL_ADDRESS]'
+        maxLength: 254
+        minLength: 1
+        type: string
+      password:
+        example: yoursecretpassword
+        maxLength: 100
+        minLength: 8
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  request.RegisterRequest:
+    properties:
+      email:
+        example: '[EMAIL_ADDRESS]'
+        maxLength: 254
+        minLength: 1
+        type: string
+      name:
+        example: John Doe
+        maxLength: 100
+        minLength: 1
+        type: string
+      password:
+        example: yoursecretpassword
+        maxLength: 100
+        minLength: 8
+        type: string
+      username:
+        example: johndoe
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
+  request.UserCreateRequest:
+    properties:
+      email:
+        minLength: 1
+        type: string
+      name:
+        minLength: 1
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - email
+    - name
+    - password
+    - username
+    type: object
+  request.UserUpdateRequest:
+    properties:
+      email:
+        minLength: 1
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+      password:
+        minLength: 8
+        type: string
+      username:
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - email
+    - name
+    - username
+    type: object
+  response.AuthJSON:
+    properties:
+      access_token:
+        type: string
+      message:
+        type: string
+      status:
+        type: integer
+      user:
+        $ref: '#/definitions/response.UserInfo'
+    type: object
+  response.JSON:
+    properties:
+      data: {}
+      errors: {}
+      message:
+        type: string
+      meta:
+        $ref: '#/definitions/response.Meta'
+      status:
+        type: integer
+    type: object
+  response.Links:
+    properties:
+      current_page:
+        type: string
+      first_page:
+        type: string
+      last_page:
+        type: string
+      next_page:
+        type: string
+      prev_page:
+        type: string
+    type: object
+  response.Meta:
+    properties:
+      info:
+        type: string
+      links:
+        $ref: '#/definitions/response.Links'
+      page:
+        type: integer
+      page_size:
+        type: integer
+      search:
+        type: string
+      total_count:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  response.UserInfo:
+    properties:
+      email:
+        type: string
+      email_verified_at:
+        type: string
+      id:
+        type: string
+      name:
+        type: string
+      status:
+        type: integer
+      username:
+        type: string
+    type: object
+host: 127.0.0.1:3000
+info:
+  contact:
+    email: fatihrizqon@gmail.com
+    name: Fatih Rizqon
+  description: This is an Official Documentation for Go REST API with Fiber Framework
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: http://swagger.io/terms/
+  title: Go REST API with Fiber Framework
+  version: "1.0"
+paths:
+  /api/v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return a JWT token in a cookie
+      parameters:
+      - description: Login request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.AuthJSON'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "401":
+          description: Authentication failed
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: User login
+      tags:
+      - Auth
+  /api/v1/auth/logout:
+    post:
+      description: Logout user, blacklist refresh token, clear cookie
+      responses:
+        "200":
+          description: Successfully logged out
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Logout user
+      tags:
+      - Auth
+  /api/v1/auth/refresh:
+    post:
+      description: Generate new access token and rotate refresh token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/response.AuthJSON'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: Refresh access token
+      tags:
+      - Auth
+  /api/v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user
+      parameters:
+      - description: Register request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered successfully
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Invalid request format
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      summary: User registration
+      tags:
+      - Auth
+  /api/v1/files/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a file (image, pdf, xlsx). Max 5MB.
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: File uploaded successfully.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Upload a file
+      tags:
+      - Files
+  /api/v1/users:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all user records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column (name, username, email, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by email verified (true, false)
+        in: query
+        name: verified
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: Store a new user record
+      parameters:
+      - description: User Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create user
+      tags:
+      - Users
+  /api/v1/users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a user record by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single user by its ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get user by ID
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: Update user data by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: User Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.UserUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update user
+      tags:
+      - Users
+  /api/v1/users/{id}/lock:
+    patch:
+      consumes:
+      - application/json
+      description: Lock a user record by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been locked.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Lock user
+      tags:
+      - Users
+  /api/v1/users/{id}/unlock:
+    patch:
+      consumes:
+      - application/json
+      description: Unlock a user record by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been unlocked.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Unlock user
+      tags:
+      - Users
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -1,0 +1,58 @@
+# Air config for Go project
+# main.go located at: cmd/web/main.go
+
+root = "."
+tmp_dir = "tmp"
+testdata_dir = "testdata"
+env_files = []
+
+[build]
+  # Build hanya service web
+  cmd = "go build -o ./tmp/web ./cmd/web"
+  bin = "./tmp/web"
+
+  delay = 1000
+  kill_delay = "0s"
+  rerun = false
+  stop_on_error = false
+
+  # Watch files
+  include_ext = ["go", "tpl", "tmpl", "html"]
+  include_dir = []
+
+  # Ignore
+  exclude_dir = ["tmp", "vendor", "assets", "testdata"]
+  exclude_file = []
+  exclude_regex = ["_test.go"]
+  exclude_unchanged = false
+
+  follow_symlink = false
+  poll = false
+  poll_interval = 0
+
+  log = "build-errors.log"
+  pre_cmd = []
+  post_cmd = []
+  args_bin = []
+  full_bin = ""
+  send_interrupt = false
+  ignore_dangerous_root_dir = false
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
+  app = ""
+
+[log]
+  time = true
+  main_only = false
+  silent = false
+
+[misc]
+  clean_on_exit = false
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true
