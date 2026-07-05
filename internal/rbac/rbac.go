@@ -51,7 +51,7 @@ func New(cfg Config) *RBAC {
 	if cfg.UnauthorizedHandler == nil {
 		cfg.UnauthorizedHandler = func(c fiber.Ctx) error {
 			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-				"message": "Forbidden",
+				"message": "You are not authorized to access this resource.",
 			})
 		}
 	}

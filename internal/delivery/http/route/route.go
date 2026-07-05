@@ -9,14 +9,16 @@ import (
 )
 
 type RouteConfig struct {
-	App            *fiber.App
-	AuthMiddleware fiber.Handler
-	RbacEngine     *rbac.RBAC
-	UserHandler    *handler.UserHandler
-	AuthHandler    *handler.AuthHandler
-	FileHandler    *handler.FileHandler
-	RbacHandler    *handler.RbacHandler
-	Production     bool
+	App               *fiber.App
+	AuthMiddleware    fiber.Handler
+	CompanyMiddleware fiber.Handler
+	RbacEngine        *rbac.RBAC
+	UserHandler       *handler.UserHandler
+	AuthHandler       *handler.AuthHandler
+	FileHandler       *handler.FileHandler
+	RbacHandler       *handler.RbacHandler
+	Production        bool
+	CompanyHandler    *handler.CompanyHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -32,6 +34,7 @@ func (rc *RouteConfig) SetupGuestRoute() {
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {
+	// Initialize AuthMiddleware
 	rc.App.Use(rc.AuthMiddleware)
 
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
@@ -41,10 +44,10 @@ func (rc *RouteConfig) SetupAuthRoute() {
 
 	rc.App.Get("/api/v1/users", rc.RbacEngine.Require("users.read"), rc.UserHandler.FindAll)
 	rc.App.Get("/api/v1/users/:id", rc.RbacEngine.Require("users.read"), rc.UserHandler.FindById)
-	rc.App.Put("/api/v1/users/:id", rc.RbacEngine.Require("users.write"), rc.UserHandler.Update)
-	rc.App.Delete("/api/v1/users/:id", rc.RbacEngine.Require("users.write"), rc.UserHandler.Delete)
-	rc.App.Patch("/api/v1/users/:id/lock", rc.RbacEngine.Require("users.write"), rc.UserHandler.Lock)
-	rc.App.Patch("/api/v1/users/:id/unlock", rc.RbacEngine.Require("users.write"), rc.UserHandler.Unlock)
+	rc.App.Put("/api/v1/users/:id", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Update)
+	rc.App.Delete("/api/v1/users/:id", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Delete)
+	rc.App.Patch("/api/v1/users/:id/lock", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Lock)
+	rc.App.Patch("/api/v1/users/:id/unlock", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Unlock)
 
 	rc.App.Post("/api/v1/files/upload", rc.FileHandler.Upload)
 
@@ -69,4 +72,18 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissionById)
 	rc.App.Put("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdatePermission)
 	rc.App.Delete("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeletePermission)
+
+	// Company Management
+	rc.App.Get("/api/v1/companies", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindAll)
+	rc.App.Post("/api/v1/companies", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Create)
+	rc.App.Get("/api/v1/companies/mine", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindMyCompanies)
+	rc.App.Get("/api/v1/companies/:id", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindById)
+	rc.App.Put("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Update)
+	rc.App.Delete("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Delete)
+
+	// Company Members Management
+	rc.App.Get("/api/v1/companies/:id/members", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.FindMembersByCompany)
+	rc.App.Post("/api/v1/companies/:id/members", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.AssignMember)
+	rc.App.Put("/api/v1/companies/:id/members/:user_id/role", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.UpdateMemberRole)
+	rc.App.Delete("/api/v1/companies/:id/members/:user_id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.RemoveMember)
 }

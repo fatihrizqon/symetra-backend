@@ -2,9 +2,33 @@
 	"info": {
 		"_postman_id": "db1a3f9a-42b1-4bad-bad8-307bab499810",
 		"name": "GoFiber Microservice",
-		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "3446240"
 	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{access_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					"// Global guard: kalau 401, kemungkinan access_token sudah revoked/expired.",
+					"if (pm.response.code === 401) {",
+					"    console.warn('401 Unauthorized - access_token mungkin kosong/expired/revoked. Login ulang atau refresh token.');",
+					"}"
+				]
+			}
+		}
+	],
 	"item": [
 		{
 			"name": "Auth",
@@ -12,6 +36,9 @@
 				{
 					"name": "Register",
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
@@ -29,7 +56,42 @@
 				},
 				{
 					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Simpan access_token & refresh_token otomatis ke collection variable",
+									"// supaya bisa dipakai request lain via {{access_token}} tanpa input manual.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"",
+									"    // sesuaikan path field ini dengan struktur response asli backend kamu",
+									"    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
+									"    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
+									"",
+									"    if (accessToken) {",
+									"        pm.collectionVariables.set('access_token', accessToken);",
+									"        console.log('access_token tersimpan.');",
+									"    } else {",
+									"        console.warn('access_token tidak ditemukan di response Login.');",
+									"    }",
+									"",
+									"    if (refreshToken) {",
+									"        pm.collectionVariables.set('refresh_token', refreshToken);",
+									"    }",
+									"} else {",
+									"    console.warn('Login gagal, status: ' + pm.response.code);",
+									"}"
+								]
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
@@ -47,12 +109,41 @@
 				},
 				{
 					"name": "Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Refresh token juga menghasilkan access_token baru -> update collection variable.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
+									"    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
+									"",
+									"    if (accessToken) {",
+									"        pm.collectionVariables.set('access_token', accessToken);",
+									"        console.log('access_token diperbarui via refresh.');",
+									"    }",
+									"    if (refreshToken) {",
+									"        pm.collectionVariables.set('refresh_token', refreshToken);",
+									"    }",
+									"} else {",
+									"    console.warn('Refresh token gagal, kemungkinan refresh_token sudah revoked/expired.');",
+									"}"
+								]
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"refresh_token\": \"your-refresh-token\"\n}",
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -65,14 +156,26 @@
 				},
 				{
 					"name": "Logout",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Setelah logout, access_token dianggap revoked di server.",
+									"// Hapus dari collection variable supaya request berikutnya otomatis unauthenticated.",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.unset('access_token');",
+									"    pm.collectionVariables.unset('refresh_token');",
+									"    console.log('access_token & refresh_token dihapus (revoked).');",
+									"}"
+								]
+							}
+						}
+					],
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": "{{base_url}}/auth/logout"
 					},
 					"response": []
@@ -83,15 +186,29 @@
 			"name": "Users",
 			"item": [
 				{
+					"name": "Upload Avatar",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "avatar",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": "{{base_url}}/users/me/avatar"
+					},
+					"response": []
+				},
+				{
 					"name": "FindAll",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": "{{base_url}}/users"
 					},
 					"response": []
@@ -100,12 +217,7 @@
 					"name": "FindById",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/users/:id",
 							"host": [
@@ -128,12 +240,7 @@
 					"name": "Update",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"Updated Name\"\n}",
@@ -165,12 +272,7 @@
 					"name": "Delete",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/users/:id",
 							"host": [
@@ -193,12 +295,7 @@
 					"name": "Lock",
 					"request": {
 						"method": "PATCH",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/users/:id/lock",
 							"host": [
@@ -222,12 +319,7 @@
 					"name": "Unlock",
 					"request": {
 						"method": "PATCH",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/users/:id/unlock",
 							"host": [
@@ -250,18 +342,37 @@
 			]
 		},
 		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "Upload",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": ""
+								}
+							]
+						},
+						"url": "{{base_url}}/files/upload"
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "Roles",
 			"item": [
 				{
 					"name": "FindAll",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": "{{base_url}}/roles"
 					},
 					"response": []
@@ -270,12 +381,7 @@
 					"name": "FindById",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/roles/:id",
 							"host": [
@@ -298,12 +404,7 @@
 					"name": "Create",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrator\"\n}",
@@ -321,12 +422,7 @@
 					"name": "Update",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"admin-updated\",\n  \"description\": \"Administrator\"\n}",
@@ -358,12 +454,7 @@
 					"name": "Delete",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/roles/:id",
 							"host": [
@@ -386,12 +477,7 @@
 					"name": "Assign Role To User",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"role_id\": \"uuid-here\"\n}",
@@ -424,12 +510,7 @@
 					"name": "Revoke Role From User",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/users/:id/roles/:role_id",
 							"host": [
@@ -462,12 +543,7 @@
 					"name": "FindAll",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": "{{base_url}}/permissions"
 					},
 					"response": []
@@ -476,12 +552,7 @@
 					"name": "FindById",
 					"request": {
 						"method": "GET",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/permissions/:id",
 							"host": [
@@ -504,12 +575,7 @@
 					"name": "Create",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}",
@@ -527,12 +593,7 @@
 					"name": "Update",
 					"request": {
 						"method": "PUT",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}",
@@ -564,12 +625,7 @@
 					"name": "Delete",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/permissions/:id",
 							"host": [
@@ -592,12 +648,7 @@
 					"name": "Assign Permission To Role",
 					"request": {
 						"method": "POST",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"body": {
 							"mode": "raw",
 							"raw": "{\n  \"permission_id\": \"uuid-here\"\n}",
@@ -630,12 +681,7 @@
 					"name": "Revoke Permission From Role",
 					"request": {
 						"method": "DELETE",
-						"header": [
-							{
-								"key": "Authorization",
-								"value": "Bearer {{token}}"
-							}
-						],
+						"header": [],
 						"url": {
 							"raw": "{{base_url}}/roles/:id/permissions/:permission_id",
 							"host": [
@@ -660,6 +706,248 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Companies",
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/companies"
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Symetra Corp\",\n  \"legal_name\": \"Symetra Corporation\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info@symetra.com\",\n  \"industry\": \"Finance\",\n  \"currency\": \"USD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/companies"
+					},
+					"response": []
+				},
+				{
+					"name": "FindMyCompanies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/companies/mine"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Symetra Corp Updated\",\n  \"legal_name\": \"Symetra Corporation Ltd\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St Suite 100\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info-updated@symetra.com\",\n  \"industry\": \"Financial Services\",\n  \"currency\": \"USD\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find Members By Company",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Member",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"uuid-here\",\n  \"role\": \"member\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Member Role",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"role\": \"admin\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members/:user_id/role",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id",
+								"role"
+							],
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Member",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id/members/:user_id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [
@@ -668,7 +956,11 @@
 			"value": "http://localhost:3000/api/v1"
 		},
 		{
-			"key": "token",
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
 			"value": ""
 		},
 		{

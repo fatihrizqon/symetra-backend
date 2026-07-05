@@ -15,6 +15,8 @@ func Migrate(db *gorm.DB) {
 		&entity.Permission{},
 		&entity.File{},
 		&entity.RedisJob{},
+		&entity.Company{},
+		&entity.CompanyMember{},
 	)
 
 	seedDefaultData(db)
