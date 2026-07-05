@@ -9,16 +9,19 @@ import (
 )
 
 type RouteConfig struct {
-	App               *fiber.App
-	AuthMiddleware    fiber.Handler
-	CompanyMiddleware fiber.Handler
-	RbacEngine        *rbac.RBAC
-	UserHandler       *handler.UserHandler
-	AuthHandler       *handler.AuthHandler
-	FileHandler       *handler.FileHandler
-	RbacHandler       *handler.RbacHandler
-	Production        bool
-	CompanyHandler    *handler.CompanyHandler
+	App                *fiber.App
+	AuthMiddleware     fiber.Handler
+	CompanyMiddleware  fiber.Handler
+	RbacEngine         *rbac.RBAC
+	UserHandler        *handler.UserHandler
+	AuthHandler        *handler.AuthHandler
+	FileHandler        *handler.FileHandler
+	RbacHandler        *handler.RbacHandler
+	Production         bool
+	CompanyHandler     *handler.CompanyHandler
+	COAGroupHandler    *handler.COAGroupHandler
+	COASubGroupHandler *handler.COASubGroupHandler
+	COAHandler         *handler.COAHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -79,6 +82,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/companies/mine", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindMyCompanies)
 	rc.App.Get("/api/v1/companies/:id", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindById)
 	rc.App.Put("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Update)
+	// @todo: create an endpoint called "select company" to assign active company used in every single requests that needs company id
 	rc.App.Delete("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Delete)
 
 	// Company Members Management
@@ -86,4 +90,27 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Post("/api/v1/companies/:id/members", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.AssignMember)
 	rc.App.Put("/api/v1/companies/:id/members/:user_id/role", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.UpdateMemberRole)
 	rc.App.Delete("/api/v1/companies/:id/members/:user_id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.RemoveMember)
+
+	// COA Group Management
+	rc.App.Get("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindAll)
+	rc.App.Post("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Create)
+	rc.App.Get("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindById)
+	rc.App.Put("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Delete)
+	rc.App.Get("/api/v1/coa-groups/select", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
+
+	// COA Subgroup Management
+	rc.App.Get("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindAll)
+	rc.App.Post("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Create)
+	rc.App.Get("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindById)
+	rc.App.Put("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Delete)
+	rc.App.Get("/api/v1/coa-subgroups/select", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
+
+	// COA Management
+	rc.App.Get("/api/v1/coa", rc.RbacEngine.Require("coa.read"), rc.COAHandler.FindAll)
+	rc.App.Post("/api/v1/coa", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Create)
+	rc.App.Get("/api/v1/coa/:id", rc.RbacEngine.Require("coa.read"), rc.COAHandler.FindById)
+	rc.App.Put("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Update)
+	rc.App.Delete("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Delete)
 }

@@ -1,0 +1,136 @@
+package repository
+
+import (
+	"errors"
+	"fmt"
+
+	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
+	"github.com/fatihrizqon/gofiber-microservice/internal/util"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+var coaSortColumns = map[string]string{
+	"code":       "coa.code",
+	"name":       "coa.name",
+	"status":     "coa.status",
+	"created_at": "coa.created_at",
+	"updated_at": "coa.updated_at",
+}
+
+type ICOARepository interface {
+	Create(entity.COA) (entity.COA, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
+	FindById(companyID, entityId uuid.UUID) (entity.COA, error)
+	FindByCode(companyID uuid.UUID, code string) (entity.COA, error)
+	Update(entity.COA) error
+	Delete(companyID, entityId uuid.UUID) error
+	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
+}
+
+type COARepository struct {
+	Db *gorm.DB
+}
+
+func NewCOARepository(Db *gorm.DB) ICOARepository {
+	return &COARepository{Db: Db}
+}
+
+func (r *COARepository) Create(c entity.COA) (entity.COA, error) {
+	tx := r.Db.Begin()
+	if err := tx.Create(&c).Error; err != nil {
+		tx.Rollback()
+		return c, err
+	}
+	if err := tx.Commit().Error; err != nil {
+		return c, err
+	}
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").First(&c, "id = ?", c.Id).Error; err != nil {
+		return c, err
+	}
+	return c, nil
+}
+
+func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {
+	var entities []entity.COA
+	var totalCount int64
+
+	query := r.Db.Model(&entity.COA{}).Where("coa.company_id = ?", companyID)
+	query = util.ApplySearch(query, qp)
+	query = entity.COA{}.ApplyFilters(query, qp.Filters)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+	if totalCount == 0 {
+		return entities, 0, nil
+	}
+
+	query = util.ApplySort(query, qp, coaSortColumns, "coa.code")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Preload("SubGroup").Preload("SubGroup.Group").Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+	return entities, int(totalCount), nil
+}
+
+func (r *COARepository) FindById(companyID, entityId uuid.UUID) (entity.COA, error) {
+	var c entity.COA
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&c).Error; err != nil {
+		return c, errors.New("coa not found")
+	}
+	return c, nil
+}
+
+func (r *COARepository) Update(c entity.COA) error {
+	tx := r.Db.Begin()
+	if err := tx.Model(&c).Updates(c).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (r *COARepository) Delete(companyID, entityId uuid.UUID) error {
+	tx := r.Db.Begin()
+	if err := tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COA{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	tx.Commit()
+	return nil
+}
+
+func (r *COARepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {
+	var entities []entity.COA
+	var totalCount int64
+
+	query := r.Db.Model(&entity.COA{}).Where("coa.company_id = ? AND coa.status = 1 AND coa.active = true", companyID)
+	query = util.ApplySearch(query, qp)
+	query = entity.COA{}.ApplyFilters(query, qp.Filters)
+
+	if err := query.Count(&totalCount).Error; err != nil {
+		return nil, 0, err
+	}
+	if totalCount == 0 {
+		return entities, 0, nil
+	}
+
+	query = util.ApplySort(query, qp, coaSortColumns, "coa.code")
+	query = util.ApplyPagination(query, qp)
+
+	if err := query.Preload("SubGroup").Find(&entities).Error; err != nil {
+		return nil, 0, err
+	}
+	return entities, int(totalCount), nil
+}
+
+func (r *COARepository) FindByCode(companyID uuid.UUID, code string) (entity.COA, error) {
+	var c entity.COA
+	if err := r.Db.Where("company_id = ? AND code = ?", companyID, code).First(&c).Error; err != nil {
+		return c, fmt.Errorf("coa with code %s not found", code)
+	}
+	return c, nil
+}

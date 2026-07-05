@@ -50,6 +50,9 @@ func Bootstrap(deps *BootstrapConfig) {
 	rbacRepository := repository.NewRbacRepository(deps.DB)
 	fileRepository := repository.NewFileRepository(deps.DB)
 	companyRepository := repository.NewCompanyRepository(deps.DB)
+	coaGroupRepository := repository.NewCOAGroupRepository(deps.DB)
+	coaSubGroupRepository := repository.NewCOASubGroupRepository(deps.DB)
+	coaRepository := repository.NewCOARepository(deps.DB)
 
 	// ── Email Service ─────────────────────────────────────────────────────────
 	emailService := service.NewEmailService(deps.Log)
@@ -61,6 +64,9 @@ func Bootstrap(deps *BootstrapConfig) {
 	authService := service.NewAuthService(authRepository, tokenRepository, deps.Validate, emailService, appURL)
 	rbacService := service.NewRbacService(rbacRepository, userRepository, deps.Validate)
 	companyService := service.NewCompanyService(companyRepository, deps.Validate)
+	coaGroupService := service.NewCOAGroupService(coaGroupRepository, deps.Validate)
+	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, deps.Validate)
+	coaService := service.NewCOAService(coaRepository, deps.Validate)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
@@ -68,6 +74,9 @@ func Bootstrap(deps *BootstrapConfig) {
 	fileHandler := handler.NewFileHandler(fileService)
 	rbacHandler := handler.NewRbacHandler(rbacService)
 	companyHandler := handler.NewCompanyHandler(companyService)
+	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
+	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
+	coaHandler := handler.NewCOAHandler(coaService)
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -86,7 +95,7 @@ func Bootstrap(deps *BootstrapConfig) {
 
 	// ── Routes ────────────────────────────────────────────────────────────────
 	routeConfig := route.RouteConfig{
-		App:               deps.App,
+		App:                deps.App,
 		AuthMiddleware:     authMiddleware,
 		CompanyMiddleware:  companyMiddleware,
 		RbacEngine:         rbacEngine,
@@ -96,6 +105,9 @@ func Bootstrap(deps *BootstrapConfig) {
 		RbacHandler:        rbacHandler,
 		Production:         deps.Production,
 		CompanyHandler:     companyHandler,
+		COAGroupHandler:    coaGroupHandler,
+		COASubGroupHandler: coaSubGroupHandler,
+		COAHandler:         coaHandler,
 	}
 
 	routeConfig.Setup()

@@ -90,3 +90,18 @@ func GetAuthor(ctx fiber.Ctx) (uuid.UUID, error) {
 
 	return parsedUserId, nil
 }
+
+func GetCompanyID(ctx fiber.Ctx) (uuid.UUID, error) {
+	companyID, ok := ctx.Locals("company_id").(string)
+
+	if !ok || companyID == "" {
+		return uuid.Nil, fiber.ErrBadRequest
+	}
+
+	parsedCompanyID, err := uuid.Parse(companyID)
+	if err != nil {
+		return uuid.Nil, fiber.ErrBadRequest
+	}
+
+	return parsedCompanyID, nil
+}
