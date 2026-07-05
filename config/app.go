@@ -71,6 +71,7 @@ func Bootstrap(deps *BootstrapConfig) {
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
+	companyMiddleware := middleware.NewCompany(companyRepository)
 
 	rbacEngine := rbac.New(rbac.Config{
 		Store: rbacRepository,
@@ -85,15 +86,16 @@ func Bootstrap(deps *BootstrapConfig) {
 
 	// ── Routes ────────────────────────────────────────────────────────────────
 	routeConfig := route.RouteConfig{
-		App:            deps.App,
-		AuthMiddleware: authMiddleware,
-		RbacEngine:     rbacEngine,
-		UserHandler:    userHandler,
-		AuthHandler:    authHandler,
-		FileHandler:    fileHandler,
-		RbacHandler:    rbacHandler,
-		Production:     deps.Production,
-		CompanyHandler: companyHandler,
+		App:               deps.App,
+		AuthMiddleware:     authMiddleware,
+		CompanyMiddleware:  companyMiddleware,
+		RbacEngine:         rbacEngine,
+		UserHandler:        userHandler,
+		AuthHandler:        authHandler,
+		FileHandler:        fileHandler,
+		RbacHandler:        rbacHandler,
+		Production:         deps.Production,
+		CompanyHandler:     companyHandler,
 	}
 
 	routeConfig.Setup()

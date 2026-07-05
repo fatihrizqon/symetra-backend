@@ -9,15 +9,16 @@ import (
 )
 
 type RouteConfig struct {
-	App            *fiber.App
-	AuthMiddleware fiber.Handler
-	RbacEngine     *rbac.RBAC
-	UserHandler    *handler.UserHandler
-	AuthHandler    *handler.AuthHandler
-	FileHandler    *handler.FileHandler
-	RbacHandler    *handler.RbacHandler
-	Production     bool
-	CompanyHandler *handler.CompanyHandler
+	App               *fiber.App
+	AuthMiddleware    fiber.Handler
+	CompanyMiddleware fiber.Handler
+	RbacEngine        *rbac.RBAC
+	UserHandler       *handler.UserHandler
+	AuthHandler       *handler.AuthHandler
+	FileHandler       *handler.FileHandler
+	RbacHandler       *handler.RbacHandler
+	Production        bool
+	CompanyHandler    *handler.CompanyHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -33,6 +34,7 @@ func (rc *RouteConfig) SetupGuestRoute() {
 }
 
 func (rc *RouteConfig) SetupAuthRoute() {
+	// Initialize AuthMiddleware
 	rc.App.Use(rc.AuthMiddleware)
 
 	rc.App.Post("/api/v1/auth/logout", rc.AuthHandler.Logout)
