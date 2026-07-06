@@ -1,6 +1,7 @@
 package util
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
@@ -92,16 +93,11 @@ func GetAuthor(ctx fiber.Ctx) (uuid.UUID, error) {
 }
 
 func GetCompanyID(ctx fiber.Ctx) (uuid.UUID, error) {
-	companyID, ok := ctx.Locals("company_id").(string)
+	companyID, ok := ctx.Locals("company_id").(uuid.UUID)
 
-	if !ok || companyID == "" {
-		return uuid.Nil, fiber.ErrBadRequest
+	if !ok || companyID == uuid.Nil {
+		return uuid.Nil, fmt.Errorf("you have not selected an active company yet. Call POST /api/v1/companies/{id}/select first")
 	}
 
-	parsedCompanyID, err := uuid.Parse(companyID)
-	if err != nil {
-		return uuid.Nil, fiber.ErrBadRequest
-	}
-
-	return parsedCompanyID, nil
+	return companyID, nil
 }

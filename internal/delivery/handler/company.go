@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"errors"
+
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
@@ -375,6 +377,80 @@ func (h *CompanyHandler) Delete(ctx fiber.Ctx) error {
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  fiber.StatusOK,
 		Message: "Selected record has been deleted.",
+		Data:    result,
+	})
+}
+
+// SelectCompany godoc
+// @Summary Select or switch active company
+// @Description Set the active company for the current session. Call this again to switch company.
+// @Tags Companies
+// @Security BearerAuth
+// @Produce json
+// @Param id path string true "Company ID"
+// @Success 200 {object} response.JSON "Active company has been set."
+// @Failure 400 {object} response.JSON "Invalid company ID"
+// @Failure 401 {object} response.JSON "Unauthorized"
+// @Failure 403 {object} response.JSON "Not a member of this company"
+// @Router /api/v1/companies/{id}/select [post]
+func (h *CompanyHandler) SelectCompany(ctx fiber.Ctx) error {
+	userID, err := util.GetAuthor(ctx)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, err)
+		return nil
+	}
+
+	sessionID, ok := ctx.Locals("session_id").(uuid.UUID)
+	if !ok || sessionID == uuid.Nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, errors.New("invalid session"))
+		return nil
+	}
+
+	companyID, err := uuid.Parse(ctx.Params("id"))
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, errors.New("invalid company id"))
+		return nil
+	}
+
+	result, err := h.ICompanyService.SelectCompany(sessionID, companyID, userID)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusForbidden, err)
+		return nil
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Active company has been set.",
+		Data:    result,
+	})
+}
+
+// GetActiveCompany godoc
+// @Summary Get current active company
+// @Description Returns the company that is currently active in this session
+// @Tags Companies
+// @Security BearerAuth
+// @Produce json
+// @Success 200 {object} response.JSON "Successfully retrieved active company."
+// @Failure 401 {object} response.JSON "Unauthorized"
+// @Failure 404 {object} response.JSON "No active company selected"
+// @Router /api/v1/companies/active [get]
+func (h *CompanyHandler) GetActiveCompany(ctx fiber.Ctx) error {
+	sessionID, ok := ctx.Locals("session_id").(uuid.UUID)
+	if !ok || sessionID == uuid.Nil {
+		util.HandleError(ctx, fiber.StatusUnauthorized, errors.New("invalid session"))
+		return nil
+	}
+
+	result, err := h.ICompanyService.GetActiveCompany(sessionID)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusNotFound, err)
+		return nil
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Successfully retrieved active company.",
 		Data:    result,
 	})
 }

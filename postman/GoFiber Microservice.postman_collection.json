@@ -946,6 +946,62 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Select Company",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"type": "text/javascript",
+								"exec": [
+									"// Otomatis simpan company_id ke collection variable setelah select company.",
+									"// Berguna untuk referensi manual jika dibutuhkan.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    const companyId = jsonData.data?.id;",
+									"    if (companyId) {",
+									"        pm.collectionVariables.set('company_id', companyId);",
+									"        console.log('company_id tersimpan: ' + companyId);",
+									"    }",
+									"}"
+								]
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/companies/:id/select",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"select"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"description": "UUID of the company to select as active"
+								}
+							]
+						},
+						"description": "Set the active company for the current session. Call this again with a different ID to switch company. No request body required."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Company",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/companies/active",
+						"description": "Returns the company currently active in this session. Returns 404 if no company has been selected yet."
+					},
+					"response": []
 				}
 			]
 		},

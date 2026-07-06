@@ -17,6 +17,10 @@ func Migrate(db *gorm.DB) {
 		&entity.RedisJob{},
 		&entity.Company{},
 		&entity.CompanyMember{},
+		// ── COA ───────────────────────────────────────────────────────────────
+		&entity.COAGroup{},
+		&entity.COASubGroup{},
+		&entity.COA{},
 	)
 
 	seedDefaultData(db)

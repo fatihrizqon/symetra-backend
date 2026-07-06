@@ -134,15 +134,25 @@ func mapCOA(v entity.COA) response.COAResponse {
 	}
 	if v.SubGroup != nil {
 		r.SubGroup = &response.COASubGroupResponse{
-			Id:   v.SubGroup.Id,
-			Code: v.SubGroup.Code,
-			Name: v.SubGroup.Name,
-			Group: &response.COAGroupResponse{
+			Id:        v.SubGroup.Id,
+			Code:      v.SubGroup.Code,
+			Name:      v.SubGroup.Name,
+			Status:    v.SubGroup.Status,
+			CreatedAt: v.SubGroup.CreatedAt,
+			UpdatedAt: v.SubGroup.UpdatedAt,
+			GroupId:   v.SubGroup.GroupId,
+		}
+		if v.SubGroup.Group != nil {
+			r.SubGroup.Group = &response.COAGroupResponse{
 				Id:            v.SubGroup.Group.Id,
 				Code:          v.SubGroup.Group.Code,
 				Name:          v.SubGroup.Group.Name,
+				Type:          string(v.SubGroup.Group.Type),
 				NormalBalance: v.SubGroup.Group.NormalBalance,
-			},
+				Status:        v.SubGroup.Group.Status,
+				CreatedAt:     v.SubGroup.Group.CreatedAt,
+				UpdatedAt:     v.SubGroup.Group.UpdatedAt,
+			}
 		}
 	}
 	return r

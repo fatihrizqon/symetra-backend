@@ -63,7 +63,7 @@ func Bootstrap(deps *BootstrapConfig) {
 	appURL := cfg.GetString("web.base_url")
 	authService := service.NewAuthService(authRepository, tokenRepository, deps.Validate, emailService, appURL)
 	rbacService := service.NewRbacService(rbacRepository, userRepository, deps.Validate)
-	companyService := service.NewCompanyService(companyRepository, deps.Validate)
+	companyService := service.NewCompanyService(companyRepository, tokenRepository, deps.Validate)
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, deps.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, deps.Validate)
 	coaService := service.NewCOAService(coaRepository, deps.Validate)

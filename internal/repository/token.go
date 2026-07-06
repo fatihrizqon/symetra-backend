@@ -18,6 +18,8 @@ type ITokenRepository interface {
 	FindCredentialByToken(token string) (entity.Credential, error)
 	RevokeCredentialByID(id uuid.UUID) error
 	RevokeCredentialBySession(sessionID uuid.UUID) error
+	SetActiveCompany(sessionID uuid.UUID, companyID uuid.UUID) error
+	GetActiveCompany(sessionID uuid.UUID) (*uuid.UUID, error)
 }
 
 type TokenRepository struct {
@@ -107,4 +109,22 @@ func (r *TokenRepository) RevokeCredentialBySession(sessionID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (r *TokenRepository) SetActiveCompany(sessionID uuid.UUID, companyID uuid.UUID) error {
+	return r.Db.Model(&entity.Session{}).
+		Where("id = ? AND revoked_at IS NULL", sessionID).
+		Update("active_company_id", companyID).Error
+}
+
+func (r *TokenRepository) GetActiveCompany(sessionID uuid.UUID) (*uuid.UUID, error) {
+	var session entity.Session
+	err := r.Db.
+		Select("active_company_id").
+		Where("id = ? AND revoked_at IS NULL", sessionID).
+		First(&session).Error
+	if err != nil {
+		return nil, err
+	}
+	return session.ActiveCompanyID, nil
 }

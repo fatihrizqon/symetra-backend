@@ -23,16 +23,24 @@ type ICompanyService interface {
 	RemoveMember(companyId uuid.UUID, userId uuid.UUID) error
 	Update(req request.CompanyUpdateRequest) (response.CompanyResponse, error)
 	Delete(reqId uuid.UUID) (response.CompanyResponse, error)
+	SelectCompany(sessionID uuid.UUID, companyID uuid.UUID, userID uuid.UUID) (response.CompanyResponse, error)
+	GetActiveCompany(sessionID uuid.UUID) (response.CompanyResponse, error)
 }
 
 type CompanyService struct {
 	ICompanyRepository repository.ICompanyRepository
+	ITokenRepository   repository.ITokenRepository
 	validate           *validator.Validate
 }
 
-func NewCompanyService(repo repository.ICompanyRepository, validate *validator.Validate) ICompanyService {
+func NewCompanyService(
+	repo repository.ICompanyRepository,
+	tokenRepo repository.ITokenRepository,
+	validate *validator.Validate,
+) ICompanyService {
 	return &CompanyService{
 		ICompanyRepository: repo,
+		ITokenRepository:   tokenRepo,
 		validate:           validate,
 	}
 }
@@ -349,6 +357,69 @@ func (s *CompanyService) Delete(reqId uuid.UUID) (response.CompanyResponse, erro
 		Email:     c.Email,
 		Industry:  c.Industry,
 		Currency:  c.Currency,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+		DeletedAt: c.DeletedAt,
+	}, nil
+}
+
+func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (response.CompanyResponse, error) {
+	_, err := s.ICompanyRepository.FindMember(companyID, userID)
+	if err != nil {
+		return response.CompanyResponse{}, errors.New("you are not a member of this company")
+	}
+
+	c, err := s.ICompanyRepository.FindById(companyID)
+	if err != nil {
+		return response.CompanyResponse{}, errors.New("company not found")
+	}
+
+	if err := s.ITokenRepository.SetActiveCompany(sessionID, companyID); err != nil {
+		return response.CompanyResponse{}, errors.New("failed to set active company")
+	}
+
+	return response.CompanyResponse{
+		Id:        c.Id,
+		Name:      c.Name,
+		LegalName: c.LegalName,
+		TaxID:     c.TaxID,
+		Address:   c.Address,
+		Phone:     c.Phone,
+		Email:     c.Email,
+		Industry:  c.Industry,
+		Currency:  c.Currency,
+		CreatedBy: c.CreatedBy,
+		CreatedAt: c.CreatedAt,
+		UpdatedAt: c.UpdatedAt,
+		DeletedAt: c.DeletedAt,
+	}, nil
+}
+
+func (s *CompanyService) GetActiveCompany(sessionID uuid.UUID) (response.CompanyResponse, error) {
+	companyID, err := s.ITokenRepository.GetActiveCompany(sessionID)
+	if err != nil {
+		return response.CompanyResponse{}, errors.New("failed to retrieve session")
+	}
+	if companyID == nil {
+		return response.CompanyResponse{}, errors.New("no active company selected")
+	}
+
+	c, err := s.ICompanyRepository.FindById(*companyID)
+	if err != nil {
+		return response.CompanyResponse{}, errors.New("active company not found")
+	}
+
+	return response.CompanyResponse{
+		Id:        c.Id,
+		Name:      c.Name,
+		LegalName: c.LegalName,
+		TaxID:     c.TaxID,
+		Address:   c.Address,
+		Phone:     c.Phone,
+		Email:     c.Email,
+		Industry:  c.Industry,
+		Currency:  c.Currency,
+		CreatedBy: c.CreatedBy,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
 		DeletedAt: c.DeletedAt,

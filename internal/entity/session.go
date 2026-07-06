@@ -11,10 +11,11 @@ func (Session) TableName() string {
 }
 
 type Session struct {
-	ID             uuid.UUID `gorm:"type:uuid;primaryKey"`
-	UserID         uuid.UUID `gorm:"type:uuid;index;not null"`
-	UserAgent      string    `gorm:"type:text"`
-	IPAddress      string    `gorm:"type:varchar(45)"`
+	ID              uuid.UUID  `gorm:"type:uuid;primaryKey"`
+	UserID          uuid.UUID  `gorm:"type:uuid;index;not null"`
+	ActiveCompanyID *uuid.UUID `gorm:"type:uuid;default:null"`
+	UserAgent       string     `gorm:"type:text"`
+	IPAddress       string     `gorm:"type:varchar(45)"`
 	LastActivityAt *time.Time
 	RevokedAt      *time.Time
 	CreatedAt      time.Time

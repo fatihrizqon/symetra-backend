@@ -80,9 +80,10 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/companies", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindAll)
 	rc.App.Post("/api/v1/companies", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Create)
 	rc.App.Get("/api/v1/companies/mine", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindMyCompanies)
+	rc.App.Get("/api/v1/companies/active", rc.CompanyHandler.GetActiveCompany)
 	rc.App.Get("/api/v1/companies/:id", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindById)
 	rc.App.Put("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Update)
-	// @todo: create an endpoint called "select company" to assign active company used in every single requests that needs company id
+	rc.App.Post("/api/v1/companies/:id/select", rc.CompanyHandler.SelectCompany)
 	rc.App.Delete("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Delete)
 
 	// Company Members Management
@@ -94,18 +95,18 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	// COA Group Management
 	rc.App.Get("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindAll)
 	rc.App.Post("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Create)
+	rc.App.Get("/api/v1/coa-groups/select", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Delete)
-	rc.App.Get("/api/v1/coa-groups/select", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
 
 	// COA Subgroup Management
 	rc.App.Get("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindAll)
 	rc.App.Post("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Create)
+	rc.App.Get("/api/v1/coa-subgroups/select", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Delete)
-	rc.App.Get("/api/v1/coa-subgroups/select", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
 
 	// COA Management
 	rc.App.Get("/api/v1/coa", rc.RbacEngine.Require("coa.read"), rc.COAHandler.FindAll)

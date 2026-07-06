@@ -32,19 +32,24 @@ func NewAuth(tokenRepo repository.ITokenRepository) fiber.Handler {
 			return nil
 		}
 
-		sessionID := claims.SessionID
+	sessionID := claims.SessionID
 		if sessionID == uuid.Nil {
 			util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("invalid token claims"))
 			return nil
 		}
 
-		if _, err := tokenRepo.FindSessionByID(sessionID); err != nil {
+		session, err := tokenRepo.FindSessionByID(sessionID)
+		if err != nil {
 			util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("session revoked"))
 			return nil
 		}
 
 		ctx.Locals("auth", claims)
 		ctx.Locals("session_id", sessionID)
+
+		if session.ActiveCompanyID != nil {
+			ctx.Locals("company_id", *session.ActiveCompanyID)
+		}
 
 		return ctx.Next()
 	}
