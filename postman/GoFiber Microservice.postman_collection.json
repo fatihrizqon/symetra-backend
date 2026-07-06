@@ -726,7 +726,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Symetra Corp\",\n  \"legal_name\": \"Symetra Corporation\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info@symetra.com\",\n  \"industry\": \"Finance\",\n  \"currency\": \"USD\"\n}",
+							"raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -776,7 +776,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Symetra Corp Updated\",\n  \"legal_name\": \"Symetra Corporation Ltd\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"123 Main St Suite 100\",\n  \"phone\": \"08123456789\",\n  \"email\": \"info-updated@symetra.com\",\n  \"industry\": \"Financial Services\",\n  \"currency\": \"USD\"\n}",
+							"raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1143,7 +1143,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Current Assets\",\n  \"code\": \"11\",\n  \"coa_group_id\": \"uuid-here\"\n}",
+							"raw": "{\n  \"name\": \"Current Assets\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1184,7 +1184,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Current Assets Updated\",\n  \"code\": \"11\",\n  \"coa_group_id\": \"uuid-here\"\n}",
+							"raw": "{\n  \"name\": \"Current Assets Updated\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1262,7 +1262,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"coa_subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
+							"raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1303,7 +1303,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"coa_subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
+							"raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
