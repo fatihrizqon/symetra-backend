@@ -44,18 +44,10 @@ func NewCompanyRepository(db *gorm.DB) ICompanyRepository {
 }
 
 func (r *CompanyRepository) WithTransaction(fn func(txRepo ICompanyRepository) error) error {
-	tx := r.Db.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	txRepo := &CompanyRepository{Db: tx}
-	if err := fn(txRepo); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &CompanyRepository{Db: tx}
+		return fn(txRepo)
+	})
 }
 
 func (r *CompanyRepository) Create(u entity.Company) (entity.Company, error) {

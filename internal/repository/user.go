@@ -44,18 +44,10 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 }
 
 func (r *UserRepository) WithTransaction(fn func(txRepo IUserRepository) error) error {
-	tx := r.Db.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-
-	txRepo := &UserRepository{Db: tx}
-	if err := fn(txRepo); err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return tx.Commit().Error
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &UserRepository{Db: tx}
+		return fn(txRepo)
+	})
 }
 
 func (r *UserRepository) Create(u entity.User) (entity.User, error) {

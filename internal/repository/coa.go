@@ -37,12 +37,13 @@ func NewCOARepository(Db *gorm.DB) ICOARepository {
 }
 
 func (r *COARepository) Create(c entity.COA) (entity.COA, error) {
-	tx := r.Db.Begin()
-	if err := tx.Create(&c).Error; err != nil {
-		tx.Rollback()
-		return c, err
-	}
-	if err := tx.Commit().Error; err != nil {
+	err := r.Db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&c).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
 		return c, err
 	}
 	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").First(&c, "id = ?", c.Id).Error; err != nil {
@@ -84,23 +85,15 @@ func (r *COARepository) FindById(companyID, entityId uuid.UUID) (entity.COA, err
 }
 
 func (r *COARepository) Update(c entity.COA) error {
-	tx := r.Db.Begin()
-	if err := tx.Model(&c).Updates(c).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&c).Updates(c).Error
+	})
 }
 
 func (r *COARepository) Delete(companyID, entityId uuid.UUID) error {
-	tx := r.Db.Begin()
-	if err := tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COA{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COA{}).Error
+	})
 }
 
 func (r *COARepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {

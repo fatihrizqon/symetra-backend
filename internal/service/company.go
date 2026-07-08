@@ -65,6 +65,9 @@ func (s *CompanyService) Create(req request.CompanyCreateRequest, userId uuid.UU
 	err := s.ICompanyRepository.WithTransaction(func(txRepo repository.ICompanyRepository) error {
 		var txErr error
 		c, txErr = txRepo.Create(c)
+		if txErr != nil {
+			return txErr
+		}
 
 		_, txErr = txRepo.AssignMember(entity.CompanyMember{
 			CompanyId: c.Id,

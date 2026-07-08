@@ -35,16 +35,10 @@ func NewCOASubGroupRepository(Db *gorm.DB) ICOASubGroupRepository {
 }
 
 func (r *COASubGroupRepository) Create(sg entity.COASubGroup) (entity.COASubGroup, error) {
-	tx := r.Db.Begin()
-	if tx.Error != nil {
-		return sg, tx.Error
-	}
-	if err := tx.Create(&sg).Error; err != nil {
-		tx.Rollback()
-		return sg, err
-	}
-	// Commit FIRST. Only after commit is the row visible to other connections.
-	if err := tx.Commit().Error; err != nil {
+	err := r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Create(&sg).Error
+	})
+	if err != nil {
 		return sg, err
 	}
 	// Preload AFTER commit — safe to use main connection now.
@@ -90,23 +84,15 @@ func (r *COASubGroupRepository) FindById(companyID, entityId uuid.UUID) (entity.
 }
 
 func (r *COASubGroupRepository) Update(sg entity.COASubGroup) error {
-	tx := r.Db.Begin()
-	if err := tx.Model(&sg).Updates(sg).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&sg).Updates(sg).Error
+	})
 }
 
 func (r *COASubGroupRepository) Delete(companyID, entityId uuid.UUID) error {
-	tx := r.Db.Begin()
-	if err := tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COASubGroup{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-	tx.Commit()
-	return nil
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COASubGroup{}).Error
+	})
 }
 
 func (r *COASubGroupRepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
