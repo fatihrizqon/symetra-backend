@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -55,7 +56,7 @@ func (s *AuthService) Register(req request.RegisterRequest) (entity.User, error)
 		return entity.User{}, err
 	}
 
-	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(req.Password), util.PasswordHashCost)
 	user := entity.User{
 		Name:     req.Name,
 		Username: req.Username,
@@ -134,7 +135,7 @@ func (s *AuthService) RefreshToken(refreshToken string) (AuthResult, error) {
 		return AuthResult{}, errors.New("invalid or revoked refresh token")
 	}
 
-	session, err := s.ITokenRepository.FindSessionByID(oldCredential.SessionID)
+	session, err := s.ITokenRepository.FindSessionByID(context.Background(), oldCredential.SessionID)
 	if err != nil {
 		return AuthResult{}, errors.New("session revoked or not found")
 	}

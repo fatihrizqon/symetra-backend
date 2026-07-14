@@ -23,19 +23,24 @@ func NewJobSweeper(repo repository.IRedisJobRepository, asynqClient *asynq.Clien
 	}
 }
 
-func (s *JobSweeper) Start(ctx context.Context, interval time.Duration) {
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+func (s *JobSweeper) Start(ctx context.Context, sweepInterval time.Duration, cleanupInterval time.Duration) {
+	sweepTicker := time.NewTicker(sweepInterval)
+	defer sweepTicker.Stop()
+	
+	cleanupTicker := time.NewTicker(cleanupInterval)
+	defer cleanupTicker.Stop()
 
-	s.log.Infof("Starting RedisJob Sweeper with interval %v", interval)
+	s.log.Infof("Starting RedisJob Sweeper with interval %v and cleanup %v", sweepInterval, cleanupInterval)
 
 	for {
 		select {
 		case <-ctx.Done():
 			s.log.Info("Stopping RedisJob Sweeper")
 			return
-		case <-ticker.C:
+		case <-sweepTicker.C:
 			s.sweep()
+		case <-cleanupTicker.C:
+			s.cleanup()
 		}
 	}
 }
@@ -62,5 +67,14 @@ func (s *JobSweeper) sweep() {
 
 		s.log.Infof("JobSweeper: successfully enqueued job %s to asynq (queue=%s id=%s)", job.ID, info.Queue, info.ID)
 		_ = s.repo.UpdateStatus(job.ID, "COMPLETED", "")
+	}
+}
+
+func (s *JobSweeper) cleanup() {
+	deleted, err := s.repo.DeleteOldJobs(7 * 24 * time.Hour)
+	if err != nil {
+		s.log.Errorf("JobSweeper: failed to cleanup old jobs: %v", err)
+	} else if deleted > 0 {
+		s.log.Infof("JobSweeper: successfully cleaned up %d old jobs", deleted)
 	}
 }

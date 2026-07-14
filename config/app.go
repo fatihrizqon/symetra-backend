@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 
+	"github.com/gofiber/fiber/v3/middleware/compress"
+	"github.com/gofiber/fiber/v3/middleware/recover"
 	"github.com/gofiber/fiber/v3/middleware/static"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/handler"
@@ -15,6 +17,7 @@ import (
 	"github.com/fatihrizqon/gofiber-microservice/internal/util/storage"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v3"
+	"github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -28,12 +31,15 @@ type BootstrapConfig struct {
 	Validate   *validator.Validate
 	Config     *viper.Viper
 	JWT        *JWTService
+	Redis      *redis.Client
 	Production bool
 }
 
 func Bootstrap(deps *BootstrapConfig) {
 	cfg := deps.Config
 
+	deps.App.Use(recover.New())
+	deps.App.Use(compress.New())
 	deps.App.Use(deps.Cors.Handler())
 
 	// ── Static Files ─────────────────────────────────────────────────────────
@@ -46,8 +52,8 @@ func Bootstrap(deps *BootstrapConfig) {
 	// ── Repositories ──────────────────────────────────────────────────────────
 	userRepository := repository.NewUserRepository(deps.DB)
 	authRepository := repository.NewAuthRepository(deps.DB)
-	tokenRepository := repository.NewTokenRepository(deps.DB)
-	rbacRepository := repository.NewRbacRepository(deps.DB)
+	tokenRepository := repository.NewTokenRepository(deps.DB, deps.Redis)
+	rbacRepository := repository.NewRbacRepository(deps.DB, deps.Redis)
 	fileRepository := repository.NewFileRepository(deps.DB)
 	companyRepository := repository.NewCompanyRepository(deps.DB)
 	coaGroupRepository := repository.NewCOAGroupRepository(deps.DB)

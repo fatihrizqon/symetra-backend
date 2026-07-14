@@ -1,18 +1,21 @@
 package repository
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/google/uuid"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 )
 
 type ITokenRepository interface {
 	CreateSession(session entity.Session) (entity.Session, error)
-	FindSessionByID(sessionID uuid.UUID) (entity.Session, error)
+	FindSessionByID(ctx context.Context, sessionID uuid.UUID) (entity.Session, error)
 	RevokeSession(sessionID uuid.UUID) error
 	CreateCredential(credential entity.Credential) error
 	FindCredentialByToken(token string) (entity.Credential, error)
@@ -23,11 +26,12 @@ type ITokenRepository interface {
 }
 
 type TokenRepository struct {
-	Db *gorm.DB
+	Db    *gorm.DB
+	redis *redis.Client
 }
 
-func NewTokenRepository(Db *gorm.DB) ITokenRepository {
-	return &TokenRepository{Db: Db}
+func NewTokenRepository(Db *gorm.DB, redis *redis.Client) ITokenRepository {
+	return &TokenRepository{Db: Db, redis: redis}
 }
 
 func (r *TokenRepository) CreateSession(session entity.Session) (entity.Session, error) {
@@ -37,15 +41,29 @@ func (r *TokenRepository) CreateSession(session entity.Session) (entity.Session,
 	return session, nil
 }
 
-func (r *TokenRepository) FindSessionByID(sessionID uuid.UUID) (entity.Session, error) {
+func (r *TokenRepository) FindSessionByID(ctx context.Context, sessionID uuid.UUID) (entity.Session, error) {
 	var session entity.Session
+	cacheKey := fmt.Sprintf("session:%s", sessionID.String())
 
-	if err := r.Db.
+	// Try Redis first
+	if cached, err := r.redis.Get(ctx, cacheKey).Result(); err == nil {
+		if err := json.Unmarshal([]byte(cached), &session); err == nil {
+			return session, nil
+		}
+	}
+
+	// Fallback to DB
+	if err := r.Db.WithContext(ctx).
 		Preload("User").
 		Where("id = ? AND revoked_at IS NULL", sessionID).
 		First(&session).Error; err != nil {
 
 		return session, errors.New("session not found or revoked")
+	}
+
+	// Set cache
+	if b, err := json.Marshal(session); err == nil {
+		r.redis.Set(ctx, cacheKey, b, 60*time.Second)
 	}
 
 	return session, nil
@@ -60,6 +78,10 @@ func (r *TokenRepository) RevokeSession(sessionID uuid.UUID) error {
 
 		return errors.New("failed to revoke session")
 	}
+
+	ctx := context.Background()
+	cacheKey := fmt.Sprintf("session:%s", sessionID.String())
+	r.redis.Del(ctx, cacheKey)
 
 	return nil
 }
@@ -112,9 +134,16 @@ func (r *TokenRepository) RevokeCredentialBySession(sessionID uuid.UUID) error {
 }
 
 func (r *TokenRepository) SetActiveCompany(sessionID uuid.UUID, companyID uuid.UUID) error {
-	return r.Db.Model(&entity.Session{}).
+	err := r.Db.Model(&entity.Session{}).
 		Where("id = ? AND revoked_at IS NULL", sessionID).
 		Update("active_company_id", companyID).Error
+
+	if err == nil {
+		ctx := context.Background()
+		cacheKey := fmt.Sprintf("session:%s", sessionID.String())
+		r.redis.Del(ctx, cacheKey)
+	}
+	return err
 }
 
 func (r *TokenRepository) GetActiveCompany(sessionID uuid.UUID) (*uuid.UUID, error) {

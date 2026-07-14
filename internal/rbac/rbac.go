@@ -1,6 +1,8 @@
 package rbac
 
 import (
+	"context"
+
 	"github.com/gofiber/fiber/v3"
 )
 
@@ -8,7 +10,7 @@ import (
 // to retrieve user permissions from their database, cache, or other store.
 type PermissionStore interface {
 	// GetUserPermissions returns a list of permissions (strings) that the user has.
-	GetUserPermissions(userID string) ([]string, error)
+	GetUserPermissions(ctx context.Context, userID string) ([]string, error)
 }
 
 // Config defines the configuration for the RBAC middleware.
@@ -73,7 +75,7 @@ func (r *RBAC) Require(permission string) fiber.Handler {
 		if r.config.Store == nil {
 			return fiber.ErrInternalServerError
 		}
-		permissions, err := r.config.Store.GetUserPermissions(userID)
+		permissions, err := r.config.Store.GetUserPermissions(c.Context(), userID)
 		if err != nil {
 			return err
 		}

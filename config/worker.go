@@ -60,7 +60,7 @@ func BootstrapWorker(ctx context.Context, deps *BootstrapWorkerConfig) (*asynq.S
 
 	jobSweeper := worker.NewJobSweeper(redisJobRepo, asynqClient, logger)
 
-	go jobSweeper.Start(ctx, 15*time.Second)
+	go jobSweeper.Start(ctx, 15*time.Second, 1*time.Hour)
 
 	return srv, mux, asynqClient
 }

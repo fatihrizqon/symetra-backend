@@ -46,7 +46,7 @@ func (s *UserService) Create(req request.UserCreateRequest) (entity.User, error)
 		return entity.User{}, err
 	}
 
-	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
+	hashed, err := bcrypt.GenerateFromPassword([]byte(req.Password), util.PasswordHashCost)
 	if err != nil {
 		return entity.User{}, errors.New("failed to hash password")
 	}
@@ -146,7 +146,7 @@ func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
 func (s *UserService) Update(req request.UserUpdateRequest) (response.UserResponse, error) {
 	var hashedPassword string
 	if req.Password != "" {
-		hashed, errHash := bcrypt.GenerateFromPassword([]byte(req.Password), 14)
+		hashed, errHash := bcrypt.GenerateFromPassword([]byte(req.Password), util.PasswordHashCost)
 		if errHash != nil {
 			return response.UserResponse{}, errors.New("failed to generate password")
 		}

@@ -25,7 +25,7 @@ func NewCompany(companyRepo repository.ICompanyRepository) fiber.Handler {
 			return nil
 		}
 
-		member, err := companyRepo.FindMember(companyID, userID)
+		member, err := companyRepo.FindMember(ctx.Context(), companyID, userID)
 		if err != nil {
 			util.HandleError(ctx, fiber.StatusForbidden, fmt.Errorf("you are not a member of this company"))
 			return nil

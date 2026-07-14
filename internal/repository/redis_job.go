@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"gorm.io/gorm"
 )
@@ -9,6 +11,7 @@ type IRedisJobRepository interface {
 	Create(job entity.RedisJob) error
 	GetPendingJobs(limit int) ([]entity.RedisJob, error)
 	UpdateStatus(id string, status string, errStr string) error
+	DeleteOldJobs(olderThan time.Duration) (int64, error)
 }
 
 type RedisJobRepository struct {
@@ -34,4 +37,11 @@ func (r *RedisJobRepository) UpdateStatus(id string, status string, errStr strin
 		"status": status,
 		"error":  errStr,
 	}).Error
+}
+
+func (r *RedisJobRepository) DeleteOldJobs(olderThan time.Duration) (int64, error) {
+	cutoff := time.Now().Add(-olderThan)
+	result := r.Db.Where("status IN ? AND updated_at < ?", []string{"COMPLETED", "FAILED"}, cutoff).
+		Delete(&entity.RedisJob{})
+	return result.RowsAffected, result.Error
 }

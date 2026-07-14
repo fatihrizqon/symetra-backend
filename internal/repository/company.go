@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
@@ -26,7 +27,7 @@ type ICompanyRepository interface {
 	FindAll(qp *util.QueryParams) ([]entity.Company, int, error)
 	FindById(id uuid.UUID) (entity.Company, error)
 	FindMyCompanies(userID uuid.UUID) ([]entity.CompanyMember, error)
-	FindMember(companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error)
+	FindMember(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error)
 	FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error)
 	AssignMember(member entity.CompanyMember) (entity.CompanyMember, error)
 	UpdateMemberRole(companyId uuid.UUID, userId uuid.UUID, role string) error
@@ -103,9 +104,9 @@ func (r *CompanyRepository) FindMyCompanies(userId uuid.UUID) ([]entity.CompanyM
 	return members, nil
 }
 
-func (r *CompanyRepository) FindMember(companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error) {
+func (r *CompanyRepository) FindMember(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error) {
 	var member entity.CompanyMember
-	err := r.Db.Model(&entity.CompanyMember{}).
+	err := r.Db.WithContext(ctx).Model(&entity.CompanyMember{}).
 		Where("company_id = ? AND user_id = ?", companyId, userId).
 		First(&member).Error
 	return member, err

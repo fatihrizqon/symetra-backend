@@ -38,7 +38,7 @@ func NewAuth(tokenRepo repository.ITokenRepository) fiber.Handler {
 			return nil
 		}
 
-		session, err := tokenRepo.FindSessionByID(sessionID)
+		session, err := tokenRepo.FindSessionByID(ctx.Context(), sessionID)
 		if err != nil {
 			util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("session revoked"))
 			return nil

@@ -30,6 +30,7 @@ func main() {
 	validate := config.NewValidator(viper)
 	app := config.NewFiber(viper, log)
 	jwt := config.NewJWT(viper, log)
+	redisClient := config.NewRedisClient(viper, log)
 	prod := viper.GetBool("production")
 
 	config.Bootstrap(&config.BootstrapConfig{
@@ -40,6 +41,7 @@ func main() {
 		Validate:   validate,
 		Config:     viper,
 		JWT:        jwt,
+		Redis:      redisClient,
 		Production: prod,
 	})
 

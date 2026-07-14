@@ -1,11 +1,15 @@
 package route
 
 import (
+	"time"
+
 	_ "github.com/fatihrizqon/gofiber-microservice/docs"
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/handler"
 	"github.com/fatihrizqon/gofiber-microservice/internal/rbac"
 	swagger "github.com/gofiber/contrib/v3/swaggo"
 	"github.com/gofiber/fiber/v3"
+	"github.com/gofiber/fiber/v3/middleware/cache"
+	"github.com/gofiber/fiber/v3/middleware/limiter"
 )
 
 type RouteConfig struct {
@@ -32,9 +36,14 @@ func (rc *RouteConfig) Setup() {
 }
 
 func (rc *RouteConfig) SetupGuestRoute() {
-	rc.App.Post("/api/v1/auth/register", rc.AuthHandler.Register)
-	rc.App.Post("/api/v1/auth/login", rc.AuthHandler.Login)
-	rc.App.Post("/api/v1/auth/refresh", rc.AuthHandler.Refresh)
+	authLimiter := limiter.New(limiter.Config{
+		Max:        10,
+		Expiration: 1 * time.Minute,
+	})
+
+	rc.App.Post("/api/v1/auth/register", authLimiter, rc.AuthHandler.Register)
+	rc.App.Post("/api/v1/auth/login", authLimiter, rc.AuthHandler.Login)
+	rc.App.Post("/api/v1/auth/refresh", authLimiter, rc.AuthHandler.Refresh)
 	rc.App.Get("/swagger/*", swagger.HandlerDefault)
 }
 
@@ -66,14 +75,14 @@ func (rc *RouteConfig) SetupAuthRoute() {
 
 	// Role Management
 	rc.App.Post("/api/v1/roles", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.CreateRole)
-	rc.App.Get("/api/v1/roles", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetRoles)
+	rc.App.Get("/api/v1/roles", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetRoles)
 	rc.App.Get("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetRoleById)
 	rc.App.Put("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdateRole)
 	rc.App.Delete("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeleteRole)
 
 	// Permission Management
 	rc.App.Post("/api/v1/permissions", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.CreatePermission)
-	rc.App.Get("/api/v1/permissions", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissions)
+	rc.App.Get("/api/v1/permissions", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissions)
 	rc.App.Get("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissionById)
 	rc.App.Put("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdatePermission)
 	rc.App.Delete("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeletePermission)
@@ -97,7 +106,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	// COA Group Management
 	rc.App.Get("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindAll)
 	rc.App.Post("/api/v1/coa-groups", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Create)
-	rc.App.Get("/api/v1/coa-groups/select", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
+	rc.App.Get("/api/v1/coa-groups/select", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Delete)
@@ -105,7 +114,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	// COA Subgroup Management
 	rc.App.Get("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindAll)
 	rc.App.Post("/api/v1/coa-subgroups", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Create)
-	rc.App.Get("/api/v1/coa-subgroups/select", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
+	rc.App.Get("/api/v1/coa-subgroups/select", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Update)
 	rc.App.Delete("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Delete)

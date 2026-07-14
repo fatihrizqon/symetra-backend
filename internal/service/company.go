@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
@@ -271,7 +272,7 @@ func (s *CompanyService) UpdateMemberRole(req request.UpdateMemberRoleRequest) e
 		return errors.New("cannot assign owner role. A company can only have one owner")
 	}
 
-	member, err := s.ICompanyRepository.FindMember(req.CompanyId, req.UserID)
+	member, err := s.ICompanyRepository.FindMember(context.Background(), req.CompanyId, req.UserID)
 	if err != nil {
 		return err
 	}
@@ -284,7 +285,7 @@ func (s *CompanyService) UpdateMemberRole(req request.UpdateMemberRoleRequest) e
 }
 
 func (s *CompanyService) RemoveMember(companyId uuid.UUID, userId uuid.UUID) error {
-	member, err := s.ICompanyRepository.FindMember(companyId, userId)
+	member, err := s.ICompanyRepository.FindMember(context.Background(), companyId, userId)
 	if err != nil {
 		return err
 	}
@@ -367,7 +368,7 @@ func (s *CompanyService) Delete(reqId uuid.UUID) (response.CompanyResponse, erro
 }
 
 func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (response.CompanyResponse, error) {
-	_, err := s.ICompanyRepository.FindMember(companyID, userID)
+	_, err := s.ICompanyRepository.FindMember(context.Background(), companyID, userID)
 	if err != nil {
 		return response.CompanyResponse{}, errors.New("you are not a member of this company")
 	}

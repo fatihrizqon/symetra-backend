@@ -28,6 +28,17 @@ func Migrate(db *gorm.DB) {
 		&entity.FiscalPeriodLog{},
 	)
 
+	// Performance indexes
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_redis_jobs_pending ON redis_jobs (created_at) WHERE status = 'PENDING';`)
+	db.Exec(`CREATE EXTENSION IF NOT EXISTS pg_trgm;`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_users_username_trgm ON users USING gin (username gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_users_email_trgm ON users USING gin (email gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_companies_name_trgm ON companies USING gin (name gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_coa_name_trgm ON coa USING gin (name gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_coa_code_trgm ON coa USING gin (code gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_coa_subgroups_name_trgm ON coa_subgroups USING gin (name gin_trgm_ops);`)
+	db.Exec(`CREATE INDEX IF NOT EXISTS idx_coa_groups_name_trgm ON coa_groups USING gin (name gin_trgm_ops);`)
+
 	seedDefaultData(db)
 }
 

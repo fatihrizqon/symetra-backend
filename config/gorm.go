@@ -28,13 +28,18 @@ func NewDatabase(viper *viper.Viper, log *logrus.Logger) *gorm.DB {
 		host, port, username, password, database,
 	)
 
+	logLevel := logger.Info
+	if viper.GetBool("production") {
+		logLevel = logger.Warn
+	}
+
 	db, err := gorm.Open(postgres.Open(credentials), &gorm.Config{
 		Logger: logger.New(&logrusWriter{Logger: log}, logger.Config{
-			SlowThreshold:             5 * time.Second,
+			SlowThreshold:             300 * time.Millisecond,
 			Colorful:                  false,
 			IgnoreRecordNotFoundError: true,
 			ParameterizedQueries:      true,
-			LogLevel:                  logger.Info,
+			LogLevel:                  logLevel,
 		}),
 	})
 
