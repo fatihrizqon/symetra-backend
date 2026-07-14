@@ -23,6 +23,7 @@ type ICOASubGroupRepository interface {
 	FindById(companyID, entityId uuid.UUID) (entity.COASubGroup, error)
 	Update(entity.COASubGroup) error
 	Delete(companyID, entityId uuid.UUID) error
+	HasCOAs(companyID, entityId uuid.UUID) (bool, error)
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error)
 }
 
@@ -93,6 +94,12 @@ func (r *COASubGroupRepository) Delete(companyID, entityId uuid.UUID) error {
 	return r.Db.Transaction(func(tx *gorm.DB) error {
 		return tx.Where("id = ? AND company_id = ?", entityId, companyID).Delete(&entity.COASubGroup{}).Error
 	})
+}
+
+func (r *COASubGroupRepository) HasCOAs(companyID, entityId uuid.UUID) (bool, error) {
+	var count int64
+	err := r.Db.Model(&entity.COA{}).Where("subgroup_id = ? AND company_id = ?", entityId, companyID).Count(&count).Error
+	return count > 0, err
 }
 
 func (r *COASubGroupRepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {

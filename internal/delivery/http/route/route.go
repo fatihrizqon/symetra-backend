@@ -22,6 +22,8 @@ type RouteConfig struct {
 	COAGroupHandler    *handler.COAGroupHandler
 	COASubGroupHandler *handler.COASubGroupHandler
 	COAHandler         *handler.COAHandler
+	CompanyConfigurationHandler *handler.CompanyConfigurationHandler
+	FiscalYearHandler           *handler.FiscalYearHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -114,4 +116,15 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/coa/:id", rc.RbacEngine.Require("coa.read"), rc.COAHandler.FindById)
 	rc.App.Put("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Update)
 	rc.App.Delete("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Delete)
+
+	// Company Configuration Management
+	rc.App.Get("/api/v1/company-configuration", rc.RbacEngine.Require("company_config.read"), rc.CompanyConfigurationHandler.Get)
+	rc.App.Put("/api/v1/company-configuration", rc.RbacEngine.Require("company_config.manage"), rc.CompanyConfigurationHandler.Upsert)
+
+	// Fiscal Year Management
+	rc.App.Get("/api/v1/fiscal-years", rc.RbacEngine.Require("fiscal_years.read"), rc.FiscalYearHandler.FindAll)
+	rc.App.Post("/api/v1/fiscal-years", rc.RbacEngine.Require("fiscal_years.manage"), rc.FiscalYearHandler.Create)
+	rc.App.Get("/api/v1/fiscal-years/:id", rc.RbacEngine.Require("fiscal_years.read"), rc.FiscalYearHandler.FindById)
+	rc.App.Post("/api/v1/fiscal-years/:id/activate", rc.RbacEngine.Require("fiscal_years.manage"), rc.FiscalYearHandler.Activate)
+	rc.App.Post("/api/v1/fiscal-years/periods/:period_id/close", rc.RbacEngine.Require("fiscal_years.manage"), rc.FiscalYearHandler.ClosePeriod)
 }

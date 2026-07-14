@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
@@ -78,6 +80,13 @@ func (s *COASubGroupService) Delete(companyID, reqId uuid.UUID) (entity.COASubGr
 	sg, err := s.ICOASubGroupRepository.FindById(companyID, reqId)
 	if err != nil {
 		return sg, err
+	}
+	hasCOAs, err := s.ICOASubGroupRepository.HasCOAs(companyID, reqId)
+	if err != nil {
+		return sg, err
+	}
+	if hasCOAs {
+		return sg, fmt.Errorf("HAS_CHILD_RECORDS")
 	}
 	return sg, s.ICOASubGroupRepository.Delete(companyID, reqId)
 }

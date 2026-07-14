@@ -53,6 +53,8 @@ func Bootstrap(deps *BootstrapConfig) {
 	coaGroupRepository := repository.NewCOAGroupRepository(deps.DB)
 	coaSubGroupRepository := repository.NewCOASubGroupRepository(deps.DB)
 	coaRepository := repository.NewCOARepository(deps.DB)
+	companyConfigurationRepository := repository.NewCompanyConfigurationRepository(deps.DB)
+	fiscalYearRepository := repository.NewFiscalYearRepository(deps.DB)
 
 	// ── Email Service ─────────────────────────────────────────────────────────
 	emailService := service.NewEmailService(deps.Log)
@@ -67,6 +69,8 @@ func Bootstrap(deps *BootstrapConfig) {
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, deps.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, deps.Validate)
 	coaService := service.NewCOAService(coaRepository, deps.Validate)
+	companyConfigurationService := service.NewCompanyConfigurationService(companyConfigurationRepository, deps.Validate)
+	fiscalYearService := service.NewFiscalYearService(fiscalYearRepository, deps.Validate)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	userHandler := handler.NewUserHandler(userService)
@@ -77,6 +81,8 @@ func Bootstrap(deps *BootstrapConfig) {
 	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
 	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
 	coaHandler := handler.NewCOAHandler(coaService)
+	companyConfigurationHandler := handler.NewCompanyConfigurationHandler(companyConfigurationService)
+	fiscalYearHandler := handler.NewFiscalYearHandler(fiscalYearService)
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -108,6 +114,8 @@ func Bootstrap(deps *BootstrapConfig) {
 		COAGroupHandler:    coaGroupHandler,
 		COASubGroupHandler: coaSubGroupHandler,
 		COAHandler:         coaHandler,
+		CompanyConfigurationHandler: companyConfigurationHandler,
+		FiscalYearHandler:           fiscalYearHandler,
 	}
 
 	routeConfig.Setup()

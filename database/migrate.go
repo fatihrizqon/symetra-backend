@@ -21,6 +21,11 @@ func Migrate(db *gorm.DB) {
 		&entity.COAGroup{},
 		&entity.COASubGroup{},
 		&entity.COA{},
+		// ── Phase 1 ───────────────────────────────────────────────────────────
+		&entity.CompanyConfiguration{},
+		&entity.FiscalYear{},
+		&entity.FiscalPeriod{},
+		&entity.FiscalPeriodLog{},
 	)
 
 	seedDefaultData(db)

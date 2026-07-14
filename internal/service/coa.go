@@ -40,6 +40,8 @@ func (s *COAService) Create(companyID uuid.UUID, req request.COACreateRequest) (
 		SubgroupId: req.SubgroupId,
 		Code:       req.Code,
 		Name:       req.Name,
+		NormalBalance: req.NormalBalance,
+		ControlType:   req.ControlType,
 		// CurrencyCode: req.CurrencyCode,
 		// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
 		Active: true,
@@ -85,6 +87,8 @@ func (s *COAService) Update(companyID uuid.UUID, req request.COAUpdateRequest) (
 	c.SubgroupId = req.SubgroupId
 	c.Code = req.Code
 	c.Name = req.Name
+	c.NormalBalance = req.NormalBalance
+	c.ControlType = req.ControlType
 	// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
 	// if req.CurrencyCode != "" {
 	// 	c.CurrencyCode = req.CurrencyCode
@@ -98,13 +102,14 @@ func (s *COAService) Delete(companyID, reqId uuid.UUID) (entity.COA, error) {
 		return c, err
 	}
 	// Guard: cannot delete if used in transactions
+	// TODO: implement checks against journal_lines and company_configurations
 	// if s.IJournalEntryRepository != nil {
 	// 	hasTransactions, err := s.IJournalEntryRepository.HasTransactions(companyID, reqId)
 	// 	if err != nil {
 	// 		return c, err
 	// 	}
 	// 	if hasTransactions {
-	// 		return c, errors.New("cannot delete an account that has been used in journal entries")
+	// 		return c, fmt.Errorf("ACCOUNT_IN_USE")
 	// 	}
 	// }
 	return c, s.ICOARepository.Delete(companyID, reqId)
@@ -128,6 +133,8 @@ func mapCOA(v entity.COA) response.COAResponse {
 		SubgroupId: v.SubgroupId,
 		Code:       v.Code,
 		Name:       v.Name,
+		NormalBalance: v.NormalBalance,
+		ControlType: v.ControlType,
 		Status:     v.Status,
 		CreatedAt:  v.CreatedAt,
 		UpdatedAt:  v.UpdatedAt,

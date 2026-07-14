@@ -40,6 +40,7 @@ type COAGroup struct {
 	Name          string       `gorm:"type:character varying;not null;" json:"name"`
 	Type          COAGroupType `gorm:"type:character varying;not null;default:'asset';" json:"type"`
 	NormalBalance string       `gorm:"type:character varying;not null;" json:"normal_balance"`
+	Category      *string      `gorm:"type:character varying;" json:"category"`
 	Status        int          `gorm:"type:int;not null;default:1;" json:"status"`
 	CreatedAt     time.Time    `gorm:"autoCreateTime;" json:"created_at"`
 	UpdatedAt     time.Time    `gorm:"autoUpdateTime;" json:"updated_at"`

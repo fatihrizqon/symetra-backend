@@ -1352,6 +1352,151 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Company Configuration",
+			"item": [
+				{
+					"name": "Get Configuration",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/company-configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Upsert Configuration",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"enable_tax\": true,\n  \"tax_rate\": 0.11,\n  \"invoice_prefix\": \"INV\",\n  \"quotation_prefix\": \"QUO\",\n  \"invoice_due_days\": 30\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/company-configuration"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Fiscal Years",
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": "{{base_url}}/fiscal-years"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/fiscal-years/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Fiscal Year 2026\",\n  \"start_date\": \"2026-01-01\",\n  \"end_date\": \"2026-12-31\",\n  \"period_type\": \"monthly\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/fiscal-years"
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/fiscal-years/:id/activate",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								":id",
+								"activate"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Period",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"reason\": \"End of month closing\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/fiscal-years/periods/:period_id/close",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								"periods",
+								":period_id",
+								"close"
+							],
+							"variable": [
+								{
+									"key": "period_id"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [

@@ -24,6 +24,8 @@ func seedAdminUser(db *gorm.DB) {
 		pCoaGroupRead, pCoaGroupManage       entity.Permission
 		pCoaSubgroupRead, pCoaSubgroupManage entity.Permission
 		pCoaRead, pCoaManage                 entity.Permission
+		pCompanyConfigRead, pCompanyConfigManage entity.Permission
+		pFiscalYearRead, pFiscalYearManage       entity.Permission
 	)
 
 	if err := db.Where("name = ?", "users.read").First(&pUserRead).Error; err != nil {
@@ -78,7 +80,27 @@ func seedAdminUser(db *gorm.DB) {
 
 	if err := db.Where("name = ?", "coa.manage").First(&pCoaManage).Error; err != nil {
 		pCoaManage = entity.Permission{Name: "coa.manage", Description: "Manage COA data"}
-		db.Create(&pCoaSubgroupManage)
+		db.Create(&pCoaManage) // Fixed previous typo here from pCoaSubgroupManage
+	}
+
+	if err := db.Where("name = ?", "company_config.read").First(&pCompanyConfigRead).Error; err != nil {
+		pCompanyConfigRead = entity.Permission{Name: "company_config.read", Description: "Read company configuration"}
+		db.Create(&pCompanyConfigRead)
+	}
+
+	if err := db.Where("name = ?", "company_config.manage").First(&pCompanyConfigManage).Error; err != nil {
+		pCompanyConfigManage = entity.Permission{Name: "company_config.manage", Description: "Manage company configuration"}
+		db.Create(&pCompanyConfigManage)
+	}
+
+	if err := db.Where("name = ?", "fiscal_years.read").First(&pFiscalYearRead).Error; err != nil {
+		pFiscalYearRead = entity.Permission{Name: "fiscal_years.read", Description: "Read fiscal years data"}
+		db.Create(&pFiscalYearRead)
+	}
+
+	if err := db.Where("name = ?", "fiscal_years.manage").First(&pFiscalYearManage).Error; err != nil {
+		pFiscalYearManage = entity.Permission{Name: "fiscal_years.manage", Description: "Manage fiscal years data"}
+		db.Create(&pFiscalYearManage)
 	}
 
 	// 2. Seed Role
@@ -93,11 +115,13 @@ func seedAdminUser(db *gorm.DB) {
 				pCoaGroupRead, pCoaGroupManage,
 				pCoaSubgroupRead, pCoaSubgroupManage,
 				pCoaRead, pCoaManage,
+				pCompanyConfigRead, pCompanyConfigManage,
+				pFiscalYearRead, pFiscalYearManage,
 			},
 		}
 		db.Create(&roleAdmin)
 	} else {
-		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage)
+		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage)
 	}
 
 	var user entity.User

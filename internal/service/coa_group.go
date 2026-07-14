@@ -44,6 +44,7 @@ func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreate
 		Name:          req.Name,
 		Type:          groupType,
 		NormalBalance: req.NormalBalance,
+		Category:      req.Category,
 	}
 	return s.ICOAGroupRepository.Create(g)
 }
@@ -88,6 +89,7 @@ func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdate
 	g.Name = req.Name
 	g.Type = groupType
 	g.NormalBalance = req.NormalBalance
+	g.Category = req.Category
 	return g, s.ICOAGroupRepository.Update(g)
 }
 
@@ -95,6 +97,13 @@ func (s *COAGroupService) Delete(companyID, reqId uuid.UUID) (entity.COAGroup, e
 	g, err := s.ICOAGroupRepository.FindById(companyID, reqId)
 	if err != nil {
 		return g, err
+	}
+	hasSubgroups, err := s.ICOAGroupRepository.HasSubgroups(companyID, reqId)
+	if err != nil {
+		return g, err
+	}
+	if hasSubgroups {
+		return g, fmt.Errorf("HAS_CHILD_RECORDS")
 	}
 	return g, s.ICOAGroupRepository.Delete(companyID, reqId)
 }
@@ -118,6 +127,7 @@ func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
 		Name:          v.Name,
 		Type:          string(v.Type),
 		NormalBalance: v.NormalBalance,
+		Category:      v.Category,
 		Status:        v.Status,
 		CreatedAt:     v.CreatedAt,
 		UpdatedAt:     v.UpdatedAt,
