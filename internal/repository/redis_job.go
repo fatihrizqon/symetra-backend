@@ -19,14 +19,14 @@ func NewRedisJobRepository(Db *gorm.DB) IRedisJobRepository {
 	return &RedisJobRepository{Db: Db}
 }
 
-func (r *RedisJobRepository) Create(job entity.RedisJob) error {
-	return r.Db.Create(&job).Error
+func (r *RedisJobRepository) Create(entity entity.RedisJob) error {
+	return r.Db.Create(&entity).Error
 }
 
 func (r *RedisJobRepository) GetPendingJobs(limit int) ([]entity.RedisJob, error) {
-	var jobs []entity.RedisJob
-	err := r.Db.Where("status = ?", "PENDING").Order("created_at asc").Limit(limit).Find(&jobs).Error
-	return jobs, err
+	var entities []entity.RedisJob
+	err := r.Db.Where("status = ?", "PENDING").Order("created_at asc").Limit(limit).Find(&entities).Error
+	return entities, err
 }
 
 func (r *RedisJobRepository) UpdateStatus(id string, status string, errStr string) error {

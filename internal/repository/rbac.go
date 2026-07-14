@@ -37,7 +37,6 @@ func NewRbacRepository(db *gorm.DB) IRbacRepository {
 func (r *RbacRepository) GetUserPermissions(userId string) ([]string, error) {
 	var permissions []string
 
-	// Ambil semua name permission berdasarkan relasi many-to-many user -> role -> permission
 	err := r.Db.Table("permissions").
 		Joins("JOIN role_permissions ON role_permissions.permission_id = permissions.id").
 		Joins("JOIN user_roles ON user_roles.role_id = role_permissions.role_id").
@@ -127,14 +126,14 @@ func (r *RbacRepository) PermissionExists(permissionId string) (bool, error) {
 	return count > 0, err
 }
 
-func (r *RbacRepository) CreateRole(role *entity.Role) error {
-	return r.Db.Create(role).Error
+func (r *RbacRepository) CreateRole(entity *entity.Role) error {
+	return r.Db.Create(entity).Error
 }
 
 func (r *RbacRepository) GetRoles() ([]entity.Role, error) {
-	var roles []entity.Role
-	err := r.Db.Find(&roles).Error
-	return roles, err
+	var entities []entity.Role
+	err := r.Db.Find(&entities).Error
+	return entities, err
 }
 
 func (r *RbacRepository) GetRoleById(roleId string) (*entity.Role, error) {
@@ -147,8 +146,8 @@ func (r *RbacRepository) GetRoleById(roleId string) (*entity.Role, error) {
 	return &role, err
 }
 
-func (r *RbacRepository) UpdateRole(role *entity.Role) error {
-	return r.Db.Save(role).Error
+func (r *RbacRepository) UpdateRole(entity *entity.Role) error {
+	return r.Db.Save(entity).Error
 }
 
 func (r *RbacRepository) DeleteRole(roleId string) error {
@@ -159,14 +158,14 @@ func (r *RbacRepository) DeleteRole(roleId string) error {
 	return r.Db.Delete(&entity.Role{}, parsedId).Error
 }
 
-func (r *RbacRepository) CreatePermission(permission *entity.Permission) error {
-	return r.Db.Create(permission).Error
+func (r *RbacRepository) CreatePermission(entity *entity.Permission) error {
+	return r.Db.Create(entity).Error
 }
 
 func (r *RbacRepository) GetPermissions() ([]entity.Permission, error) {
-	var permissions []entity.Permission
-	err := r.Db.Find(&permissions).Error
-	return permissions, err
+	var entities []entity.Permission
+	err := r.Db.Find(&entities).Error
+	return entities, err
 }
 
 func (r *RbacRepository) GetPermissionById(permissionId string) (*entity.Permission, error) {
@@ -179,8 +178,8 @@ func (r *RbacRepository) GetPermissionById(permissionId string) (*entity.Permiss
 	return &permission, err
 }
 
-func (r *RbacRepository) UpdatePermission(permission *entity.Permission) error {
-	return r.Db.Save(permission).Error
+func (r *RbacRepository) UpdatePermission(entity *entity.Permission) error {
+	return r.Db.Save(entity).Error
 }
 
 func (r *RbacRepository) DeletePermission(permissionId string) error {

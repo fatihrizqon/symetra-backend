@@ -50,11 +50,11 @@ func (r *CompanyRepository) WithTransaction(fn func(txRepo ICompanyRepository) e
 	})
 }
 
-func (r *CompanyRepository) Create(ent entity.Company) (entity.Company, error) {
-	if err := r.Db.Create(&ent).Error; err != nil {
-		return ent, err
+func (r *CompanyRepository) Create(entity entity.Company) (entity.Company, error) {
+	if err := r.Db.Create(&entity).Error; err != nil {
+		return entity, err
 	}
-	return ent, nil
+	return entity, nil
 }
 
 func (r *CompanyRepository) FindAll(qp *util.QueryParams) ([]entity.Company, int, error) {
@@ -83,11 +83,11 @@ func (r *CompanyRepository) FindAll(qp *util.QueryParams) ([]entity.Company, int
 }
 
 func (r *CompanyRepository) FindById(id uuid.UUID) (entity.Company, error) {
-	var ent entity.Company
-	if err := r.Db.Where("id = ?", id).First(&ent).Error; err != nil {
-		return ent, err
+	var entity entity.Company
+	if err := r.Db.Where("id = ?", id).First(&entity).Error; err != nil {
+		return entity, err
 	}
-	return ent, nil
+	return entity, nil
 }
 
 func (r *CompanyRepository) FindMyCompanies(userId uuid.UUID) ([]entity.CompanyMember, error) {
@@ -153,8 +153,8 @@ func (r *CompanyRepository) RemoveMember(companyId uuid.UUID, userId uuid.UUID) 
 	return nil
 }
 
-func (r *CompanyRepository) Update(ent entity.Company) error {
-	if err := r.Db.Model(&ent).Updates(ent).Error; err != nil {
+func (r *CompanyRepository) Update(entity entity.Company) error {
+	if err := r.Db.Model(&entity).Updates(entity).Error; err != nil {
 		return err
 	}
 	return nil

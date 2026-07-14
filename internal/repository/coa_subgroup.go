@@ -34,18 +34,18 @@ func NewCOASubGroupRepository(Db *gorm.DB) ICOASubGroupRepository {
 	return &COASubGroupRepository{Db: Db}
 }
 
-func (r *COASubGroupRepository) Create(ent entity.COASubGroup) (entity.COASubGroup, error) {
+func (r *COASubGroupRepository) Create(entity entity.COASubGroup) (entity.COASubGroup, error) {
 	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(&ent).Error
+		return tx.Create(&entity).Error
 	})
 	if err != nil {
-		return ent, err
+		return entity, err
 	}
 	// Preload AFTER commit — safe to use main connection now.
-	if err := r.Db.Preload("Group").First(&ent, "id = ?", ent.Id).Error; err != nil {
-		return ent, err
+	if err := r.Db.Preload("Group").First(&entity, "id = ?", entity.Id).Error; err != nil {
+		return entity, err
 	}
-	return ent, nil
+	return entity, nil
 }
 
 func (r *COASubGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
@@ -76,16 +76,16 @@ func (r *COASubGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParam
 }
 
 func (r *COASubGroupRepository) FindById(companyID, entityId uuid.UUID) (entity.COASubGroup, error) {
-	var ent entity.COASubGroup
-	if err := r.Db.Preload("Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&ent).Error; err != nil {
-		return ent, errors.New("coa subgroup not found")
+	var entity entity.COASubGroup
+	if err := r.Db.Preload("Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&entity).Error; err != nil {
+		return entity, errors.New("coa subgroup not found")
 	}
-	return ent, nil
+	return entity, nil
 }
 
-func (r *COASubGroupRepository) Update(ent entity.COASubGroup) error {
+func (r *COASubGroupRepository) Update(entity entity.COASubGroup) error {
 	return r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Model(&ent).Updates(ent).Error
+		return tx.Model(&entity).Updates(entity).Error
 	})
 }
 

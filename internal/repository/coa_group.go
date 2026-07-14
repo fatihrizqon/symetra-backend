@@ -37,11 +37,11 @@ func NewCOAGroupRepository(Db *gorm.DB) ICOAGroupRepository {
 	return &COAGroupRepository{Db: Db}
 }
 
-func (r *COAGroupRepository) Create(ent entity.COAGroup) (entity.COAGroup, error) {
+func (r *COAGroupRepository) Create(entity entity.COAGroup) (entity.COAGroup, error) {
 	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(&ent).Error
+		return tx.Create(&entity).Error
 	})
-	return ent, err
+	return entity, err
 }
 
 func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error) {
@@ -72,11 +72,11 @@ func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) 
 }
 
 func (r *COAGroupRepository) FindById(companyID, entityId uuid.UUID) (entity.COAGroup, error) {
-	var ent entity.COAGroup
-	if err := r.Db.Where("id = ? AND company_id = ?", entityId, companyID).First(&ent).Error; err != nil {
-		return ent, errors.New("coa group not found")
+	var entity entity.COAGroup
+	if err := r.Db.Where("id = ? AND company_id = ?", entityId, companyID).First(&entity).Error; err != nil {
+		return entity, errors.New("coa group not found")
 	}
-	return ent, nil
+	return entity, nil
 }
 
 func (r *COAGroupRepository) Update(ent entity.COAGroup) error {
@@ -115,9 +115,9 @@ func (r *COAGroupRepository) SelectDropdownList(companyID uuid.UUID, qp *util.Qu
 }
 
 func (r *COAGroupRepository) FindByName(companyID uuid.UUID, name string) (entity.COAGroup, error) {
-	var ent entity.COAGroup
-	if err := r.Db.Where("company_id = ? AND LOWER(name) = LOWER(?)", companyID, name).First(&ent).Error; err != nil {
-		return ent, fmt.Errorf("coa group '%s' not found", name)
+	var entity entity.COAGroup
+	if err := r.Db.Where("company_id = ? AND LOWER(name) = LOWER(?)", companyID, name).First(&entity).Error; err != nil {
+		return entity, fmt.Errorf("coa group '%s' not found", name)
 	}
-	return ent, nil
+	return entity, nil
 }

@@ -8,9 +8,9 @@ import (
 )
 
 type IAuthRepository interface {
-	Register(user entity.User) (entity.User, error)
-	RegisterWithJobs(user entity.User, jobs []entity.RedisJob) (entity.User, error)
-	Login(username string) (entity.User, error)
+	Register(ent entity.User) (entity.User, error)
+	RegisterWithJobs(ent entity.User, jobs []entity.RedisJob) (entity.User, error)
+	Login(email string) (entity.User, error)
 }
 
 type AuthRepository struct {
@@ -21,19 +21,19 @@ func NewAuthRepository(Db *gorm.DB) IAuthRepository {
 	return &AuthRepository{Db: Db}
 }
 
-func (r *AuthRepository) Register(user entity.User) (entity.User, error) {
-	if err := r.Db.Create(&user).Error; err != nil {
-		return entity.User{}, err
+func (r *AuthRepository) Register(ent entity.User) (entity.User, error) {
+	if err := r.Db.Create(&ent).Error; err != nil {
+		return ent, err
 	}
-	return user, nil
+	return ent, nil
 }
 
-func (r *AuthRepository) RegisterWithJobs(user entity.User, jobs []entity.RedisJob) (entity.User, error) {
+func (r *AuthRepository) RegisterWithJobs(ent entity.User, jobs []entity.RedisJob) (entity.User, error) {
 	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&user).Error; err != nil {
+		if err := tx.Create(&ent).Error; err != nil {
 			return err
 		}
-		
+
 		for _, job := range jobs {
 			if err := tx.Create(&job).Error; err != nil {
 				return err
@@ -45,14 +45,14 @@ func (r *AuthRepository) RegisterWithJobs(user entity.User, jobs []entity.RedisJ
 	if err != nil {
 		return entity.User{}, err
 	}
-	
-	return user, nil
+
+	return ent, nil
 }
 
 func (r *AuthRepository) Login(email string) (entity.User, error) {
-	var ent entity.User
-	if err := r.Db.Where("email = ?", email).First(&ent).Error; err != nil {
-		return ent, errors.New("credentials does not matches our record")
+	var entity entity.User
+	if err := r.Db.Where("email = ?", email).First(&entity).Error; err != nil {
+		return entity, errors.New("credentials does not matches our record")
 	}
-	return ent, nil
+	return entity, nil
 }

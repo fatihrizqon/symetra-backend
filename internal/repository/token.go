@@ -64,25 +64,25 @@ func (r *TokenRepository) RevokeSession(sessionID uuid.UUID) error {
 	return nil
 }
 
-func (r *TokenRepository) CreateCredential(credential entity.Credential) error {
-	if err := r.Db.Create(&credential).Error; err != nil {
+func (r *TokenRepository) CreateCredential(entity entity.Credential) error {
+	if err := r.Db.Create(&entity).Error; err != nil {
 		return errors.New("failed to create credential : " + err.Error())
 	}
 	return nil
 }
 
 func (r *TokenRepository) FindCredentialByToken(refreshToken string) (entity.Credential, error) {
-	var credential entity.Credential
+	var entity entity.Credential
 
 	err := r.Db.
 		Where("refresh_token = ? AND revoked_at IS NULL AND expires_at > ?", refreshToken, time.Now()).
-		First(&credential).Error
+		First(&entity).Error
 
 	if err != nil {
-		return credential, fmt.Errorf("invalid, expired, or revoked refresh token")
+		return entity, fmt.Errorf("invalid, expired, or revoked refresh token")
 	}
 
-	return credential, nil
+	return entity, nil
 }
 
 func (r *TokenRepository) RevokeCredentialByID(id uuid.UUID) error {

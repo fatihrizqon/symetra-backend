@@ -7,7 +7,7 @@ import (
 )
 
 type IFileRepository interface {
-	Create(file entity.File) (entity.File, error)
+	Create(entity entity.File) (entity.File, error)
 	FindById(id uuid.UUID) (entity.File, error)
 	Delete(id uuid.UUID) error
 }
@@ -20,19 +20,19 @@ func NewFileRepository(db *gorm.DB) IFileRepository {
 	return &FileRepository{Db: db}
 }
 
-func (r *FileRepository) Create(file entity.File) (entity.File, error) {
-	if err := r.Db.Create(&file).Error; err != nil {
-		return file, err
+func (r *FileRepository) Create(entity entity.File) (entity.File, error) {
+	if err := r.Db.Create(&entity).Error; err != nil {
+		return entity, err
 	}
-	return file, nil
+	return entity, nil
 }
 
 func (r *FileRepository) FindById(id uuid.UUID) (entity.File, error) {
-	var file entity.File
-	if err := r.Db.Where("id = ?", id).First(&file).Error; err != nil {
-		return file, err
+	var entity entity.File
+	if err := r.Db.Where("id = ?", id).First(&entity).Error; err != nil {
+		return entity, err
 	}
-	return file, nil
+	return entity, nil
 }
 
 func (r *FileRepository) Delete(id uuid.UUID) error {
