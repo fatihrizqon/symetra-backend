@@ -50,9 +50,9 @@ func (r *AuthRepository) RegisterWithJobs(user entity.User, jobs []entity.RedisJ
 }
 
 func (r *AuthRepository) Login(email string) (entity.User, error) {
-	var entity entity.User
-	if err := r.Db.Where("email = ?", email).First(&entity).Error; err != nil {
-		return entity, errors.New("credentials does not matches our record")
+	var ent entity.User
+	if err := r.Db.Where("email = ?", email).First(&ent).Error; err != nil {
+		return ent, errors.New("credentials does not matches our record")
 	}
-	return entity, nil
+	return ent, nil
 }

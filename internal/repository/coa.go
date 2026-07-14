@@ -36,20 +36,20 @@ func NewCOARepository(Db *gorm.DB) ICOARepository {
 	return &COARepository{Db: Db}
 }
 
-func (r *COARepository) Create(c entity.COA) (entity.COA, error) {
+func (r *COARepository) Create(ent entity.COA) (entity.COA, error) {
 	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(&c).Error; err != nil {
+		if err := tx.Create(&ent).Error; err != nil {
 			return err
 		}
 		return nil
 	})
 	if err != nil {
-		return c, err
+		return ent, err
 	}
-	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").First(&c, "id = ?", c.Id).Error; err != nil {
-		return c, err
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").First(&ent, "id = ?", ent.Id).Error; err != nil {
+		return ent, err
 	}
-	return c, nil
+	return ent, nil
 }
 
 func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error) {
@@ -77,16 +77,16 @@ func (r *COARepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]en
 }
 
 func (r *COARepository) FindById(companyID, entityId uuid.UUID) (entity.COA, error) {
-	var c entity.COA
-	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&c).Error; err != nil {
-		return c, errors.New("coa not found")
+	var ent entity.COA
+	if err := r.Db.Preload("SubGroup").Preload("SubGroup.Group").Where("id = ? AND company_id = ?", entityId, companyID).First(&ent).Error; err != nil {
+		return ent, errors.New("coa not found")
 	}
-	return c, nil
+	return ent, nil
 }
 
-func (r *COARepository) Update(c entity.COA) error {
+func (r *COARepository) Update(ent entity.COA) error {
 	return r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Model(&c).Updates(c).Error
+		return tx.Model(&ent).Updates(ent).Error
 	})
 }
 
@@ -121,9 +121,9 @@ func (r *COARepository) SelectDropdownList(companyID uuid.UUID, qp *util.QueryPa
 }
 
 func (r *COARepository) FindByCode(companyID uuid.UUID, code string) (entity.COA, error) {
-	var c entity.COA
-	if err := r.Db.Where("company_id = ? AND code = ?", companyID, code).First(&c).Error; err != nil {
-		return c, fmt.Errorf("coa with code %s not found", code)
+	var ent entity.COA
+	if err := r.Db.Where("company_id = ? AND code = ?", companyID, code).First(&ent).Error; err != nil {
+		return ent, fmt.Errorf("coa with code %s not found", code)
 	}
-	return c, nil
+	return ent, nil
 }

@@ -37,11 +37,11 @@ func NewCOAGroupRepository(Db *gorm.DB) ICOAGroupRepository {
 	return &COAGroupRepository{Db: Db}
 }
 
-func (r *COAGroupRepository) Create(g entity.COAGroup) (entity.COAGroup, error) {
+func (r *COAGroupRepository) Create(ent entity.COAGroup) (entity.COAGroup, error) {
 	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(&g).Error
+		return tx.Create(&ent).Error
 	})
-	return g, err
+	return ent, err
 }
 
 func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error) {
@@ -72,16 +72,16 @@ func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) 
 }
 
 func (r *COAGroupRepository) FindById(companyID, entityId uuid.UUID) (entity.COAGroup, error) {
-	var g entity.COAGroup
-	if err := r.Db.Where("id = ? AND company_id = ?", entityId, companyID).First(&g).Error; err != nil {
-		return g, errors.New("coa group not found")
+	var ent entity.COAGroup
+	if err := r.Db.Where("id = ? AND company_id = ?", entityId, companyID).First(&ent).Error; err != nil {
+		return ent, errors.New("coa group not found")
 	}
-	return g, nil
+	return ent, nil
 }
 
-func (r *COAGroupRepository) Update(g entity.COAGroup) error {
+func (r *COAGroupRepository) Update(ent entity.COAGroup) error {
 	return r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Model(&g).Updates(g).Error
+		return tx.Model(&ent).Updates(ent).Error
 	})
 }
 
@@ -115,10 +115,9 @@ func (r *COAGroupRepository) SelectDropdownList(companyID uuid.UUID, qp *util.Qu
 }
 
 func (r *COAGroupRepository) FindByName(companyID uuid.UUID, name string) (entity.COAGroup, error) {
-	var g entity.COAGroup
-	// Case-insensitive contains match, consistent with report service behavior
-	if err := r.Db.Where("company_id = ? AND LOWER(name) = LOWER(?)", companyID, name).First(&g).Error; err != nil {
-		return g, fmt.Errorf("coa group '%s' not found", name)
+	var ent entity.COAGroup
+	if err := r.Db.Where("company_id = ? AND LOWER(name) = LOWER(?)", companyID, name).First(&ent).Error; err != nil {
+		return ent, fmt.Errorf("coa group '%s' not found", name)
 	}
-	return g, nil
+	return ent, nil
 }

@@ -50,11 +50,11 @@ func (r *UserRepository) WithTransaction(fn func(txRepo IUserRepository) error) 
 	})
 }
 
-func (r *UserRepository) Create(u entity.User) (entity.User, error) {
-	if err := r.Db.Create(&u).Error; err != nil {
-		return u, err
+func (r *UserRepository) Create(ent entity.User) (entity.User, error) {
+	if err := r.Db.Create(&ent).Error; err != nil {
+		return ent, err
 	}
-	return u, nil
+	return ent, nil
 }
 
 func (r *UserRepository) FindAll(qp *util.QueryParams) ([]entity.User, int, error) {
@@ -83,15 +83,15 @@ func (r *UserRepository) FindAll(qp *util.QueryParams) ([]entity.User, int, erro
 }
 
 func (r *UserRepository) FindById(id uuid.UUID) (entity.User, error) {
-	var u entity.User
-	if err := r.Db.Preload("Avatar").Preload("Roles").Preload("Roles.Permissions").Where("id = ?", id).First(&u).Error; err != nil {
-		return u, err
+	var ent entity.User
+	if err := r.Db.Preload("Avatar").Preload("Roles").Preload("Roles.Permissions").Where("id = ?", id).First(&ent).Error; err != nil {
+		return ent, err
 	}
-	return u, nil
+	return ent, nil
 }
 
-func (r *UserRepository) Update(u entity.User) error {
-	if err := r.Db.Model(&u).Updates(u).Error; err != nil {
+func (r *UserRepository) Update(ent entity.User) error {
+	if err := r.Db.Model(&ent).Updates(ent).Error; err != nil {
 		return err
 	}
 	return nil
