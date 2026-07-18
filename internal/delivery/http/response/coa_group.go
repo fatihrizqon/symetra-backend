@@ -11,7 +11,6 @@ type COAGroupResponse struct {
 	Code          string    `json:"code"`
 	Name          string    `json:"name"`
 	Type          string    `json:"type"`
-	NormalBalance string    `json:"normal_balance"`
 	Category      *string   `json:"category"`
 	Status        int       `json:"status"`
 	CreatedAt     time.Time `json:"created_at"`

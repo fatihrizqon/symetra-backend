@@ -16,7 +16,6 @@ const (
 	COAGroupTypeLiability COAGroupType = "liability"
 	COAGroupTypeEquity    COAGroupType = "equity"
 	COAGroupTypeRevenue   COAGroupType = "revenue"
-	COAGroupTypeCOGS      COAGroupType = "cogs"
 	COAGroupTypeExpense   COAGroupType = "expense"
 )
 
@@ -25,12 +24,11 @@ var ValidCOAGroupTypes = map[COAGroupType]bool{
 	COAGroupTypeLiability: true,
 	COAGroupTypeEquity:    true,
 	COAGroupTypeRevenue:   true,
-	COAGroupTypeCOGS:      true,
 	COAGroupTypeExpense:   true,
 }
 
 func (t COAGroupType) IsDebitNormal() bool {
-	return t == COAGroupTypeAsset || t == COAGroupTypeExpense || t == COAGroupTypeCOGS
+	return t == COAGroupTypeAsset || t == COAGroupTypeExpense
 }
 
 type COAGroup struct {
@@ -39,7 +37,6 @@ type COAGroup struct {
 	Code          string       `gorm:"type:character varying;not null;" json:"code"`
 	Name          string       `gorm:"type:character varying;not null;" json:"name"`
 	Type          COAGroupType `gorm:"type:character varying;not null;default:'asset';" json:"type"`
-	NormalBalance string       `gorm:"type:character varying;not null;" json:"normal_balance"`
 	Category      *string      `gorm:"type:character varying;" json:"category"`
 	Status        int          `gorm:"type:int;not null;default:1;" json:"status"`
 	CreatedAt     time.Time    `gorm:"autoCreateTime;" json:"created_at"`

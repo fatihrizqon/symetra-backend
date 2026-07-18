@@ -17,7 +17,7 @@ type COA struct {
 	Code          string       `gorm:"type:character varying;not null;" json:"code"`
 	Name          string       `gorm:"type:character varying;not null;" json:"name"`
 	CurrencyCode  string       `gorm:"type:character varying;not null;default:'IDR';" json:"currency_code"`
-	NormalBalance *string      `gorm:"type:character varying;" json:"normal_balance"`
+	IsContra      bool         `gorm:"type:boolean;not null;default:false;" json:"is_contra"`
 	ControlType   string       `gorm:"type:character varying;not null;default:'';" json:"control_type"`
 	Active        bool         `gorm:"type:boolean;not null;default:true;" json:"active"`
 	Status        int          `gorm:"type:int;not null;default:1;" json:"status"`
@@ -38,4 +38,22 @@ func (COA) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 			Where("coa_groups.type IN ?", values)
 	}
 	return db
+}
+
+func (c *COA) GetAbsoluteNormalBalance() string {
+	if c.SubGroup == nil || c.SubGroup.Group == nil {
+		return ""
+	}
+
+	isGroupDebit := c.SubGroup.Group.Type.IsDebitNormal()
+
+	isAccountDebit := isGroupDebit
+	if c.IsContra {
+		isAccountDebit = !isGroupDebit
+	}
+
+	if isAccountDebit {
+		return "DEBIT"
+	}
+	return "CREDIT"
 }

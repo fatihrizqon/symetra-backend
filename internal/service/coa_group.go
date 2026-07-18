@@ -43,7 +43,6 @@ func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreate
 		Code:          req.Code,
 		Name:          req.Name,
 		Type:          groupType,
-		NormalBalance: req.NormalBalance,
 		Category:      req.Category,
 	}
 	return s.ICOAGroupRepository.Create(g)
@@ -88,7 +87,6 @@ func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdate
 	g.Code = req.Code
 	g.Name = req.Name
 	g.Type = groupType
-	g.NormalBalance = req.NormalBalance
 	g.Category = req.Category
 	return g, s.ICOAGroupRepository.Update(g)
 }
@@ -126,7 +124,6 @@ func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
 		Code:          v.Code,
 		Name:          v.Name,
 		Type:          string(v.Type),
-		NormalBalance: v.NormalBalance,
 		Category:      v.Category,
 		Status:        v.Status,
 		CreatedAt:     v.CreatedAt,

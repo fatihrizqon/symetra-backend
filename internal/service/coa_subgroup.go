@@ -118,7 +118,6 @@ func mapCOASubGroup(v entity.COASubGroup) response.COASubGroupResponse {
 			Id:            v.Group.Id,
 			Code:          v.Group.Code,
 			Name:          v.Group.Name,
-			NormalBalance: v.Group.NormalBalance,
 			Status:        v.Group.Status,
 			CreatedAt:     v.Group.CreatedAt,
 			UpdatedAt:     v.Group.UpdatedAt,

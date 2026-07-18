@@ -13,7 +13,6 @@ import (
 var coaGroupSortColumns = map[string]string{
 	"code":           "coa_groups.code",
 	"name":           "coa_groups.name",
-	"normal_balance": "coa_groups.normal_balance",
 	"status":         "coa_groups.status",
 	"created_at":     "coa_groups.created_at",
 	"updated_at":     "coa_groups.updated_at",

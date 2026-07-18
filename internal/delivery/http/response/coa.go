@@ -13,7 +13,8 @@ type COAResponse struct {
 	Code          string               `json:"code"`
 	Group         *COAGroupResponse    `json:"group"`
 	Name          string               `json:"name"`
-	NormalBalance *string              `json:"normal_balance"`
+	IsContra      bool                 `json:"is_contra"`
+	NormalBalance string               `json:"normal_balance"`
 	ControlType   string               `json:"control_type"`
 	Status        int                  `json:"status"`
 	CreatedAt     time.Time            `json:"created_at"`

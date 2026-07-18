@@ -40,7 +40,7 @@ func (s *COAService) Create(companyID uuid.UUID, req request.COACreateRequest) (
 		SubgroupId: req.SubgroupId,
 		Code:       req.Code,
 		Name:       req.Name,
-		NormalBalance: req.NormalBalance,
+		IsContra:      req.IsContra,
 		ControlType:   req.ControlType,
 		// CurrencyCode: req.CurrencyCode,
 		// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
@@ -87,7 +87,7 @@ func (s *COAService) Update(companyID uuid.UUID, req request.COAUpdateRequest) (
 	c.SubgroupId = req.SubgroupId
 	c.Code = req.Code
 	c.Name = req.Name
-	c.NormalBalance = req.NormalBalance
+	c.IsContra = req.IsContra
 	c.ControlType = req.ControlType
 	// BUG NOTE 06032026: Undefined CurrencyCode di COACreateRequest
 	// if req.CurrencyCode != "" {
@@ -133,7 +133,8 @@ func mapCOA(v entity.COA) response.COAResponse {
 		SubgroupId: v.SubgroupId,
 		Code:       v.Code,
 		Name:       v.Name,
-		NormalBalance: v.NormalBalance,
+		IsContra:   v.IsContra,
+		NormalBalance: v.GetAbsoluteNormalBalance(),
 		ControlType: v.ControlType,
 		Status:     v.Status,
 		CreatedAt:  v.CreatedAt,
@@ -155,7 +156,6 @@ func mapCOA(v entity.COA) response.COAResponse {
 				Code:          v.SubGroup.Group.Code,
 				Name:          v.SubGroup.Group.Name,
 				Type:          string(v.SubGroup.Group.Type),
-				NormalBalance: v.SubGroup.Group.NormalBalance,
 				Status:        v.SubGroup.Group.Status,
 				CreatedAt:     v.SubGroup.Group.CreatedAt,
 				UpdatedAt:     v.SubGroup.Group.UpdatedAt,
