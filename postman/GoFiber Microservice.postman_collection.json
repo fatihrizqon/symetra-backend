@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "db1a3f9a-42b1-4bad-bad8-307bab499810",
-		"name": "GoFiber Microservice",
+		"name": "Symetra Backend",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "3446240"
 	},
@@ -1024,7 +1024,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Assets\",\n  \"code\": \"1\"\n}",
+							"raw": "{\n  \"name\": \"Assets\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1065,7 +1065,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Assets Updated\",\n  \"code\": \"1\"\n}",
+							"raw": "{\n  \"name\": \"Assets Updated\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1262,7 +1262,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
+							"raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -1303,7 +1303,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"normal_balance\": \"debit\"\n}",
+							"raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}",
 							"options": {
 								"raw": {
 									"language": "json"
