@@ -13,21 +13,22 @@ import (
 )
 
 type RouteConfig struct {
-	App                *fiber.App
-	AuthMiddleware     fiber.Handler
-	CompanyMiddleware  fiber.Handler
-	RbacEngine         *rbac.RBAC
-	UserHandler        *handler.UserHandler
-	AuthHandler        *handler.AuthHandler
-	FileHandler        *handler.FileHandler
-	RbacHandler        *handler.RbacHandler
-	Production         bool
-	CompanyHandler     *handler.CompanyHandler
-	COAGroupHandler    *handler.COAGroupHandler
-	COASubGroupHandler *handler.COASubGroupHandler
-	COAHandler         *handler.COAHandler
+	App                         *fiber.App
+	AuthMiddleware              fiber.Handler
+	CompanyMiddleware           fiber.Handler
+	RbacEngine                  *rbac.RBAC
+	UserHandler                 *handler.UserHandler
+	AuthHandler                 *handler.AuthHandler
+	FileHandler                 *handler.FileHandler
+	RbacHandler                 *handler.RbacHandler
+	Production                  bool
+	CompanyHandler              *handler.CompanyHandler
+	COAGroupHandler             *handler.COAGroupHandler
+	COASubGroupHandler          *handler.COASubGroupHandler
+	COAHandler                  *handler.COAHandler
 	CompanyConfigurationHandler *handler.CompanyConfigurationHandler
 	FiscalYearHandler           *handler.FiscalYearHandler
+	JournalEntryHandler         *handler.JournalEntryHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -136,4 +137,13 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/fiscal-years/:id", rc.RbacEngine.Require("fiscal_years.read"), rc.FiscalYearHandler.FindById)
 	rc.App.Post("/api/v1/fiscal-years/:id/activate", rc.RbacEngine.Require("fiscal_years.manage"), rc.FiscalYearHandler.Activate)
 	rc.App.Post("/api/v1/fiscal-years/periods/:period_id/close", rc.RbacEngine.Require("fiscal_years.manage"), rc.FiscalYearHandler.ClosePeriod)
+
+	// Journal Entries Management
+	rc.App.Post("/api/v1/journal_entries", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Create)
+	rc.App.Get("/api/v1/journal_entries", rc.RbacEngine.Require("transactions.read"), rc.JournalEntryHandler.FindAll)
+	rc.App.Get("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.read"), rc.JournalEntryHandler.FindById)
+	rc.App.Put("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Update)
+	rc.App.Delete("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Delete)
+	rc.App.Put("/api/v1/journal_entries/:id/post", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Post)
+	rc.App.Put("/api/v1/journal_entries/:id/void", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Void)
 }

@@ -31,7 +31,7 @@ func NewUserHandler(serv service.IUserService) *UserHandler {
 // @Router /api/v1/users [post]
 func (h *UserHandler) Create(ctx fiber.Ctx) error {
 	req := request.UserCreateRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -148,7 +148,7 @@ func (h *UserHandler) FindById(ctx fiber.Ctx) error {
 // @Router /api/v1/users/{id} [put]
 func (h *UserHandler) Update(ctx fiber.Ctx) error {
 	req := request.UserUpdateRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

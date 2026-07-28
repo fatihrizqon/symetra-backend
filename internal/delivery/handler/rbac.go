@@ -19,7 +19,7 @@ func NewRbacHandler(serv service.IRbacService) *RbacHandler {
 func (h *RbacHandler) AssignRole(ctx fiber.Ctx) error {
 	userId := ctx.Params("id")
 	req := request.AssignRoleRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -57,7 +57,7 @@ func (h *RbacHandler) RevokeRole(ctx fiber.Ctx) error {
 func (h *RbacHandler) AssignPermission(ctx fiber.Ctx) error {
 	roleId := ctx.Params("id")
 	req := request.AssignPermissionRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -94,7 +94,7 @@ func (h *RbacHandler) RevokePermission(ctx fiber.Ctx) error {
 
 func (h *RbacHandler) CreateRole(ctx fiber.Ctx) error {
 	req := request.CreateRoleRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -142,7 +142,7 @@ func (h *RbacHandler) GetRoleById(ctx fiber.Ctx) error {
 func (h *RbacHandler) UpdateRole(ctx fiber.Ctx) error {
 	roleId := ctx.Params("id")
 	req := request.UpdateRoleRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -174,7 +174,7 @@ func (h *RbacHandler) DeleteRole(ctx fiber.Ctx) error {
 
 func (h *RbacHandler) CreatePermission(ctx fiber.Ctx) error {
 	req := request.CreatePermissionRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -222,7 +222,7 @@ func (h *RbacHandler) GetPermissionById(ctx fiber.Ctx) error {
 func (h *RbacHandler) UpdatePermission(ctx fiber.Ctx) error {
 	permId := ctx.Params("id")
 	req := request.UpdatePermissionRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

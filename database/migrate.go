@@ -26,6 +26,8 @@ func Migrate(db *gorm.DB) {
 		&entity.FiscalYear{},
 		&entity.FiscalPeriod{},
 		&entity.FiscalPeriodLog{},
+		&entity.JournalEntry{},
+		&entity.JournalLine{},
 	)
 
 	// Performance indexes

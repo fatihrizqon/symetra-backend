@@ -46,7 +46,7 @@ func (h *CompanyConfigurationHandler) Upsert(ctx fiber.Ctx) error {
 	}
 
 	var req request.CompanyConfigurationUpdateRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

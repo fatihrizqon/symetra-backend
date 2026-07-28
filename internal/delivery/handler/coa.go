@@ -25,7 +25,7 @@ func (h *COAHandler) Create(ctx fiber.Ctx) error {
 		return nil
 	}
 	var req request.COACreateRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -85,7 +85,7 @@ func (h *COAHandler) Update(ctx fiber.Ctx) error {
 		return nil
 	}
 	var req request.COAUpdateRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

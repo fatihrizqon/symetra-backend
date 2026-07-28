@@ -21,6 +21,7 @@ type IFiscalYearRepository interface {
 	FindPeriodById(companyID, id uuid.UUID) (entity.FiscalPeriod, error)
 	UpdatePeriod(entity.FiscalPeriod) error
 	LogPeriodAction(entity.FiscalPeriodLog) error
+	GetOpenPeriodByDate(companyID uuid.UUID, date string) (entity.FiscalPeriod, error)
 }
 
 type FiscalYearRepository struct {
@@ -123,4 +124,14 @@ func (r *FiscalYearRepository) UpdatePeriod(ent entity.FiscalPeriod) error {
 
 func (r *FiscalYearRepository) LogPeriodAction(log entity.FiscalPeriodLog) error {
 	return r.Db.Create(&log).Error
+}
+
+func (r *FiscalYearRepository) GetOpenPeriodByDate(companyID uuid.UUID, date string) (entity.FiscalPeriod, error) {
+	var ent entity.FiscalPeriod
+	if err := r.Db.Joins("JOIN fiscal_years ON fiscal_years.id = fiscal_periods.fiscal_year_id").
+		Where("fiscal_years.company_id = ? AND fiscal_periods.status = ? AND fiscal_periods.start_date <= ? AND fiscal_periods.end_date >= ?", companyID, entity.FiscalPeriodStatusOpen, date, date).
+		First(&ent).Error; err != nil {
+		return ent, errors.New("no open fiscal period found for the given date")
+	}
+	return ent, nil
 }

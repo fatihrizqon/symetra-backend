@@ -39,7 +39,7 @@ func NewAuthHandler(serv service.IAuthService, production bool) *AuthHandler {
 // @Router /api/v1/auth/register [post]
 func (h *AuthHandler) Register(ctx fiber.Ctx) error {
 	var req request.RegisterRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -77,7 +77,7 @@ func (h *AuthHandler) Register(ctx fiber.Ctx) error {
 // @Router /api/v1/auth/login [post]
 func (h *AuthHandler) Login(ctx fiber.Ctx) error {
 	var req request.LoginRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

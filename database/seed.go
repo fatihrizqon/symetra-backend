@@ -24,8 +24,9 @@ func seedAdminUser(db *gorm.DB) {
 		pCoaGroupRead, pCoaGroupManage       entity.Permission
 		pCoaSubgroupRead, pCoaSubgroupManage entity.Permission
 		pCoaRead, pCoaManage                 entity.Permission
-		pCompanyConfigRead, pCompanyConfigManage entity.Permission
-		pFiscalYearRead, pFiscalYearManage       entity.Permission
+		pCompanyConfigRead, pCompanyConfigManage   entity.Permission
+		pFiscalYearRead, pFiscalYearManage         entity.Permission
+		pTransactionsRead, pTransactionsManage     entity.Permission
 	)
 
 	if err := db.Where("name = ?", "users.read").First(&pUserRead).Error; err != nil {
@@ -103,6 +104,16 @@ func seedAdminUser(db *gorm.DB) {
 		db.Create(&pFiscalYearManage)
 	}
 
+	if err := db.Where("name = ?", "transactions.read").First(&pTransactionsRead).Error; err != nil {
+		pTransactionsRead = entity.Permission{Name: "transactions.read", Description: "Read journal entries and transactions"}
+		db.Create(&pTransactionsRead)
+	}
+
+	if err := db.Where("name = ?", "transactions.manage").First(&pTransactionsManage).Error; err != nil {
+		pTransactionsManage = entity.Permission{Name: "transactions.manage", Description: "Create, edit, post and void journal entries"}
+		db.Create(&pTransactionsManage)
+	}
+
 	// 2. Seed Role
 	var roleAdmin entity.Role
 	if err := db.Where("name = ?", "admin").First(&roleAdmin).Error; err != nil {
@@ -117,11 +128,12 @@ func seedAdminUser(db *gorm.DB) {
 				pCoaRead, pCoaManage,
 				pCompanyConfigRead, pCompanyConfigManage,
 				pFiscalYearRead, pFiscalYearManage,
+				pTransactionsRead, pTransactionsManage,
 			},
 		}
 		db.Create(&roleAdmin)
 	} else {
-		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage)
+		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage, &pTransactionsRead, &pTransactionsManage)
 	}
 
 	var user entity.User

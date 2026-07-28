@@ -25,7 +25,7 @@ func (h *FiscalYearHandler) Create(ctx fiber.Ctx) error {
 	}
 
 	var req request.FiscalYearCreateRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -100,12 +100,12 @@ func (h *FiscalYearHandler) ClosePeriod(ctx fiber.Ctx) error {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
-	
+
 	// Optional: get userID from context for logging
 	var userID *uuid.UUID
-	
+
 	var req request.FiscalPeriodCloseRequest
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

@@ -36,7 +36,7 @@ func (h *CompanyHandler) Create(ctx fiber.Ctx) error {
 
 	req := request.CompanyCreateRequest{}
 
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -214,7 +214,7 @@ func (h *CompanyHandler) AssignMember(ctx fiber.Ctx) error {
 	}
 
 	req := request.AssignMemberRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -254,7 +254,7 @@ func (h *CompanyHandler) UpdateMemberRole(ctx fiber.Ctx) error {
 	}
 
 	req := request.UpdateMemberRoleRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
@@ -320,7 +320,7 @@ func (h *CompanyHandler) RemoveMember(ctx fiber.Ctx) error {
 // @Router /api/v1/companies/{id} [put]
 func (h *CompanyHandler) Update(ctx fiber.Ctx) error {
 	req := request.CompanyUpdateRequest{}
-	if err := ctx.Bind().Body(&req); err != nil {
+	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}

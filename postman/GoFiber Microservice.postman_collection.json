@@ -1497,6 +1497,199 @@
 					"response": []
 				}
 			]
+		},
+		{
+			"name": "Journal Entries",
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 5000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 5000000\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": "{{base_url}}/journal_entries",
+						"description": "Create a new journal entry in draft status. Lines must be balanced (total debit = total credit) and have at least 2 items."
+					},
+					"response": []
+				},
+				{
+					"name": "FindAll",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/journal_entries?page=1&page_size=10",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								},
+								{
+									"key": "search",
+									"value": "",
+									"disabled": true
+								},
+								{
+									"key": "status",
+									"value": "draft",
+									"disabled": true
+								}
+							]
+						},
+						"description": "List all journal entries with pagination, search, and status filter."
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/journal_entries/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Get a single journal entry with its lines and COA details."
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli (revisi)\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 6000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 6000000\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/journal_entries/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Update a draft journal entry. Only draft entries can be edited."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/journal_entries/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Delete a draft journal entry. Only draft entries can be deleted."
+					},
+					"response": []
+				},
+				{
+					"name": "Post",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/journal_entries/:id/post",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id",
+								"post"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Post a draft journal entry. The entry date must fall within an open fiscal period. Changes status from draft to posted."
+					},
+					"response": []
+				},
+				{
+					"name": "Void",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/journal_entries/:id/void",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id",
+								"void"
+							],
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						},
+						"description": "Void a posted journal entry. Changes status from posted to void."
+					},
+					"response": []
+				}
+			]
 		}
 	],
 	"variable": [
