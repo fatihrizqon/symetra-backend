@@ -49,12 +49,14 @@ func Bootstrap(deps *BootstrapConfig) {
 	baseURL := fmt.Sprintf("%s/uploads", cfg.GetString("web.base_url"))
 	localStorage := storage.NewLocalStorage("./public/uploads", baseURL)
 
+	appURL := cfg.GetString("web.base_url")
+
 	// ── Repositories ──────────────────────────────────────────────────────────
-	userRepository := repository.NewUserRepository(deps.DB)
-	authRepository := repository.NewAuthRepository(deps.DB)
 	tokenRepository := repository.NewTokenRepository(deps.DB, deps.Redis)
-	rbacRepository := repository.NewRbacRepository(deps.DB, deps.Redis)
 	fileRepository := repository.NewFileRepository(deps.DB)
+	authRepository := repository.NewAuthRepository(deps.DB)
+	rbacRepository := repository.NewRbacRepository(deps.DB, deps.Redis)
+	userRepository := repository.NewUserRepository(deps.DB)
 	companyRepository := repository.NewCompanyRepository(deps.DB)
 	coaGroupRepository := repository.NewCOAGroupRepository(deps.DB)
 	coaSubGroupRepository := repository.NewCOASubGroupRepository(deps.DB)
@@ -63,15 +65,12 @@ func Bootstrap(deps *BootstrapConfig) {
 	fiscalYearRepository := repository.NewFiscalYearRepository(deps.DB)
 	journalEntryRepository := repository.NewJournalEntryRepository(deps.DB)
 
-	// ── Email Service ─────────────────────────────────────────────────────────
-	emailService := service.NewEmailService(deps.Log)
-
 	// ── Services ──────────────────────────────────────────────────────────────
+	emailService := service.NewEmailService(deps.Log)
 	fileService := service.NewFileService(fileRepository, localStorage)
-	userService := service.NewUserService(userRepository, deps.Validate, fileService)
-	appURL := cfg.GetString("web.base_url")
 	authService := service.NewAuthService(authRepository, tokenRepository, deps.Validate, emailService, appURL)
 	rbacService := service.NewRbacService(rbacRepository, userRepository, deps.Validate)
+	userService := service.NewUserService(userRepository, deps.Validate, fileService)
 	companyService := service.NewCompanyService(companyRepository, tokenRepository, deps.Validate)
 	coaGroupService := service.NewCOAGroupService(coaGroupRepository, deps.Validate)
 	coaSubGroupService := service.NewCOASubGroupService(coaSubGroupRepository, deps.Validate)
@@ -81,10 +80,10 @@ func Bootstrap(deps *BootstrapConfig) {
 	journalEntryService := service.NewJournalEntryService(journalEntryRepository, coaRepository, fiscalYearRepository)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
-	userHandler := handler.NewUserHandler(userService)
-	authHandler := handler.NewAuthHandler(authService, deps.Production)
 	fileHandler := handler.NewFileHandler(fileService)
+	authHandler := handler.NewAuthHandler(authService, deps.Production)
 	rbacHandler := handler.NewRbacHandler(rbacService)
+	userHandler := handler.NewUserHandler(userService)
 	companyHandler := handler.NewCompanyHandler(companyService)
 	coaGroupHandler := handler.NewCOAGroupHandler(coaGroupService)
 	coaSubGroupHandler := handler.NewCOASubGroupHandler(coaSubGroupService)
@@ -110,19 +109,19 @@ func Bootstrap(deps *BootstrapConfig) {
 
 	// ── Routes ────────────────────────────────────────────────────────────────
 	routeConfig := route.RouteConfig{
-		App:                deps.App,
-		AuthMiddleware:     authMiddleware,
-		CompanyMiddleware:  companyMiddleware,
-		RbacEngine:         rbacEngine,
-		UserHandler:        userHandler,
-		AuthHandler:        authHandler,
-		FileHandler:        fileHandler,
-		RbacHandler:        rbacHandler,
-		Production:         deps.Production,
-		CompanyHandler:     companyHandler,
-		COAGroupHandler:    coaGroupHandler,
-		COASubGroupHandler: coaSubGroupHandler,
-		COAHandler:         coaHandler,
+		App:                         deps.App,
+		AuthMiddleware:              authMiddleware,
+		CompanyMiddleware:           companyMiddleware,
+		RbacEngine:                  rbacEngine,
+		UserHandler:                 userHandler,
+		AuthHandler:                 authHandler,
+		FileHandler:                 fileHandler,
+		RbacHandler:                 rbacHandler,
+		Production:                  deps.Production,
+		CompanyHandler:              companyHandler,
+		COAGroupHandler:             coaGroupHandler,
+		COASubGroupHandler:          coaSubGroupHandler,
+		COAHandler:                  coaHandler,
 		CompanyConfigurationHandler: companyConfigurationHandler,
 		FiscalYearHandler:           fiscalYearHandler,
 		JournalEntryHandler:         journalEntryHandler,
