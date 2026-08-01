@@ -33,6 +33,7 @@ type IUserRepository interface {
 	CountAll(ctx context.Context) (int64, error)
 	CountBetween(ctx context.Context, from time.Time, to time.Time) (int64, error)
 	CountVerified(ctx context.Context) (int64, error)
+	BulkDestroy(ids []uuid.UUID) error
 }
 
 type UserRepository struct {
@@ -144,3 +145,11 @@ func (r *UserRepository) CountVerified(ctx context.Context) (int64, error) {
 	}
 	return count, nil
 }
+
+func (r *UserRepository) BulkDestroy(ids []uuid.UUID) error {
+	if err := r.Db.Model(&entity.User{}).Where("id IN ?", ids).Update("deleted_at", time.Now()).Error; err != nil {
+		return err
+	}
+	return nil
+}
+

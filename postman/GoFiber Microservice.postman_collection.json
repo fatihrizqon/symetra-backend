@@ -338,6 +338,37 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/users/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"destroy"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -533,6 +564,37 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/roles/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								"destroy"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -700,6 +762,37 @@
 								{
 									"key": "permission_id"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/permissions/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"permissions",
+								"destroy"
 							]
 						}
 					},
@@ -1002,6 +1095,37 @@
 						"description": "Returns the company currently active in this session. Returns 404 if no company has been selected yet."
 					},
 					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/companies/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"destroy"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1119,6 +1243,37 @@
 						"method": "GET",
 						"header": [],
 						"url": "{{base_url}}/coa-groups/select"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/coa-groups/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-groups",
+								"destroy"
+							]
+						}
 					},
 					"response": []
 				}
@@ -1240,6 +1395,37 @@
 						"url": "{{base_url}}/coa-subgroups/select"
 					},
 					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/coa-subgroups/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-subgroups",
+								"destroy"
+							]
+						}
+					},
+					"response": []
 				}
 			]
 		},
@@ -1346,6 +1532,37 @@
 								{
 									"key": "id"
 								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/coa/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa",
+								"destroy"
 							]
 						}
 					},
@@ -1686,6 +1903,37 @@
 							]
 						},
 						"description": "Void a posted journal entry. Changes status from posted to void."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/journal_entries/destroy",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								"destroy"
+							]
+						}
 					},
 					"response": []
 				}

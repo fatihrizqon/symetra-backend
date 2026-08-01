@@ -34,6 +34,7 @@ type ICompanyRepository interface {
 	RemoveMember(companyId uuid.UUID, userId uuid.UUID) error
 	Update(entity.Company) error
 	Delete(id uuid.UUID) error
+	BulkDestroy(ids []uuid.UUID) error
 }
 
 type CompanyRepository struct {
@@ -167,3 +168,11 @@ func (r *CompanyRepository) Delete(id uuid.UUID) error {
 	}
 	return nil
 }
+
+func (r *CompanyRepository) BulkDestroy(ids []uuid.UUID) error {
+	if err := r.Db.Model(&entity.Company{}).Where("id IN ?", ids).Update("deleted_at", time.Now()).Error; err != nil {
+		return err
+	}
+	return nil
+}
+

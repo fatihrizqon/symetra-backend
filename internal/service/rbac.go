@@ -26,6 +26,8 @@ type IRbacService interface {
 	GetPermissionById(permissionId string) (*response.PermissionResponse, error)
 	UpdatePermission(permissionId string, req request.UpdatePermissionRequest) error
 	DeletePermission(permissionId string) error
+	DestroyRoles(ids []string) error
+	DestroyPermissions(ids []string) error
 }
 
 type RbacService struct {
@@ -235,3 +237,18 @@ func (s *RbacService) DeletePermission(permissionId string) error {
 	}
 	return s.RbacRepo.DeletePermission(permissionId)
 }
+
+func (s *RbacService) DestroyRoles(ids []string) error {
+	if len(ids) == 0 {
+		return errors.New("no ids provided")
+	}
+	return s.RbacRepo.BulkDestroyRoles(ids)
+}
+
+func (s *RbacService) DestroyPermissions(ids []string) error {
+	if len(ids) == 0 {
+		return errors.New("no ids provided")
+	}
+	return s.RbacRepo.BulkDestroyPermissions(ids)
+}
+

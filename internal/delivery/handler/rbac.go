@@ -251,3 +251,54 @@ func (h *RbacHandler) DeletePermission(ctx fiber.Ctx) error {
 		Message: "Permission successfully deleted.",
 	})
 }
+
+func (h *RbacHandler) DestroyRoles(ctx fiber.Ctx) error {
+	req := request.BulkActionRequest{}
+	if err := util.Parse(ctx, &req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	var stringIds []string
+	for _, id := range req.Ids {
+		stringIds = append(stringIds, id.String())
+	}
+
+	if err := h.IRbacService.DestroyRoles(stringIds); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Roles successfully deleted.",
+	})
+}
+
+func (h *RbacHandler) DestroyPermissions(ctx fiber.Ctx) error {
+	req := request.BulkActionRequest{}
+	if err := util.Parse(ctx, &req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	var stringIds []string
+	for _, id := range req.Ids {
+		stringIds = append(stringIds, id.String())
+	}
+
+	if err := h.IRbacService.DestroyPermissions(stringIds); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Permissions successfully deleted.",
+	})
+}
+

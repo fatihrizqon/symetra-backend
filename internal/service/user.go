@@ -25,6 +25,7 @@ type IUserService interface {
 	Lock(reqId uuid.UUID) (response.UserResponse, error)
 	Unlock(reqId uuid.UUID) (response.UserResponse, error)
 	UploadAvatar(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) (response.UserResponse, error)
+	Destroy(ids []uuid.UUID) error
 }
 
 type UserService struct {
@@ -283,3 +284,11 @@ func (s *UserService) Unlock(reqId uuid.UUID) (response.UserResponse, error) {
 		UpdatedAt: u.UpdatedAt,
 	}, nil
 }
+
+func (s *UserService) Destroy(ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return errors.New("no ids provided")
+	}
+	return s.IUserRepository.BulkDestroy(ids)
+}
+

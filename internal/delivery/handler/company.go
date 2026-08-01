@@ -454,3 +454,24 @@ func (h *CompanyHandler) GetActiveCompany(ctx fiber.Ctx) error {
 		Data:    result,
 	})
 }
+
+func (h *CompanyHandler) Destroy(ctx fiber.Ctx) error {
+	req := request.BulkActionRequest{}
+	if err := util.Parse(ctx, &req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	if err := h.ICompanyService.Destroy(req.Ids); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
+			Message: err.Error(),
+		})
+	}
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Records have been deleted.",
+	})
+}
+

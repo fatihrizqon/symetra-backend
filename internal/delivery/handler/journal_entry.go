@@ -187,3 +187,23 @@ func (h *JournalEntryHandler) Void(ctx fiber.Ctx) error {
 	ent, _ := h.Service.FindById(companyID, id)
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Journal entry voided successfully.", Data: ent})
 }
+
+func (h *JournalEntryHandler) Destroy(ctx fiber.Ctx) error {
+	companyID, err := util.GetCompanyID(ctx)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	req := request.BulkActionRequest{}
+	if err := util.Parse(ctx, &req); err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
+
+	if err := h.Service.Destroy(companyID, req.Ids); err != nil {
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+	}
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Records have been deleted."})
+}
+

@@ -26,6 +26,7 @@ type ICOARepository interface {
 	Update(entity.COA) error
 	Delete(companyID, entityId uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COA, int, error)
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type COARepository struct {
@@ -127,3 +128,10 @@ func (r *COARepository) FindByCode(companyID uuid.UUID, code string) (entity.COA
 	}
 	return entity, nil
 }
+
+func (r *COARepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Where("company_id = ? AND id IN ?", companyID, ids).Delete(&entity.COA{}).Error
+	})
+}
+

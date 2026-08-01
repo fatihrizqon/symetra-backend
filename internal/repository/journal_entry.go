@@ -19,6 +19,7 @@ type IJournalEntryRepository interface {
 	Post(companyId, id, fiscalPeriodId uuid.UUID) error
 	Void(companyId, id uuid.UUID) error
 	GenerateJournalNumber(companyId uuid.UUID, date time.Time, typePrefix string) (string, error)
+	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
 }
 
 type JournalEntryRepository struct {
@@ -145,3 +146,8 @@ func (r *JournalEntryRepository) Void(companyId, id uuid.UUID) error {
 		Where("id = ? AND company_id = ? AND status = ?", id, companyId, entity.JournalStatusPosted).
 		Update("status", entity.JournalStatusVoid).Error
 }
+
+func (r *JournalEntryRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyId, ids, entity.JournalStatusDraft).Delete(&entity.JournalEntry{}).Error
+}
+

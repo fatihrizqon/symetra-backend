@@ -30,6 +30,8 @@ type IRbacRepository interface {
 	GetPermissionById(permissionId string) (*entity.Permission, error)
 	UpdatePermission(permission *entity.Permission) error
 	DeletePermission(permissionId string) error
+	BulkDestroyRoles(ids []string) error
+	BulkDestroyPermissions(ids []string) error
 }
 
 type RbacRepository struct {
@@ -263,3 +265,34 @@ func (r *RbacRepository) DeletePermission(permissionId string) error {
 	}
 	return r.Db.Delete(&entity.Permission{}, parsedId).Error
 }
+
+func (r *RbacRepository) BulkDestroyRoles(ids []string) error {
+	var uuids []uuid.UUID
+	for _, id := range ids {
+		if parsedId, err := uuid.Parse(id); err == nil {
+			uuids = append(uuids, parsedId)
+		}
+	}
+	if len(uuids) == 0 {
+		return nil
+	}
+	err := r.Db.Where("id IN ?", uuids).Delete(&entity.Role{}).Error
+	if err == nil {
+		r.invalidateAllUsersCache()
+	}
+	return err
+}
+
+func (r *RbacRepository) BulkDestroyPermissions(ids []string) error {
+	var uuids []uuid.UUID
+	for _, id := range ids {
+		if parsedId, err := uuid.Parse(id); err == nil {
+			uuids = append(uuids, parsedId)
+		}
+	}
+	if len(uuids) == 0 {
+		return nil
+	}
+	return r.Db.Where("id IN ?", uuids).Delete(&entity.Permission{}).Error
+}
+

@@ -26,6 +26,7 @@ type ICompanyService interface {
 	Delete(reqId uuid.UUID) (response.CompanyResponse, error)
 	SelectCompany(sessionID uuid.UUID, companyID uuid.UUID, userID uuid.UUID) (response.CompanyResponse, error)
 	GetActiveCompany(sessionID uuid.UUID) (response.CompanyResponse, error)
+	Destroy(ids []uuid.UUID) error
 }
 
 type CompanyService struct {
@@ -429,3 +430,11 @@ func (s *CompanyService) GetActiveCompany(sessionID uuid.UUID) (response.Company
 		DeletedAt: c.DeletedAt,
 	}, nil
 }
+
+func (s *CompanyService) Destroy(ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return errors.New("no ids provided")
+	}
+	return s.ICompanyRepository.BulkDestroy(ids)
+}
+

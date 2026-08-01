@@ -19,6 +19,7 @@ type ICOAGroupService interface {
 	Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error)
 	Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error)
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
+	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type COAGroupService struct {
@@ -130,3 +131,11 @@ func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
 		UpdatedAt:     v.UpdatedAt,
 	}
 }
+
+func (s *COAGroupService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return fmt.Errorf("no ids provided")
+	}
+	return s.ICOAGroupRepository.BulkDestroy(companyID, ids)
+}
+

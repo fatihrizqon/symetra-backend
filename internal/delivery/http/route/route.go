@@ -60,6 +60,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/users", rc.RbacEngine.Require("users.read"), rc.UserHandler.FindAll)
 	rc.App.Get("/api/v1/users/:id", rc.RbacEngine.Require("users.read"), rc.UserHandler.FindById)
 	rc.App.Put("/api/v1/users/:id", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Update)
+	rc.App.Delete("/api/v1/users/destroy", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Destroy)
 	rc.App.Delete("/api/v1/users/:id", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Delete)
 	rc.App.Patch("/api/v1/users/:id/lock", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Lock)
 	rc.App.Patch("/api/v1/users/:id/unlock", rc.RbacEngine.Require("users.manage"), rc.UserHandler.Unlock)
@@ -79,6 +80,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/roles", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetRoles)
 	rc.App.Get("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetRoleById)
 	rc.App.Put("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdateRole)
+	rc.App.Delete("/api/v1/roles/destroy", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DestroyRoles)
 	rc.App.Delete("/api/v1/roles/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeleteRole)
 
 	// Permission Management
@@ -86,6 +88,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/permissions", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissions)
 	rc.App.Get("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.GetPermissionById)
 	rc.App.Put("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.UpdatePermission)
+	rc.App.Delete("/api/v1/permissions/destroy", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DestroyPermissions)
 	rc.App.Delete("/api/v1/permissions/:id", rc.RbacEngine.Require("rbac.manage"), rc.RbacHandler.DeletePermission)
 
 	// Company Management
@@ -96,6 +99,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/companies/:id", rc.RbacEngine.Require("companies.read"), rc.CompanyHandler.FindById)
 	rc.App.Put("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Update)
 	rc.App.Post("/api/v1/companies/:id/select", rc.CompanyHandler.SelectCompany)
+	rc.App.Delete("/api/v1/companies/destroy", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Destroy)
 	rc.App.Delete("/api/v1/companies/:id", rc.RbacEngine.Require("companies.manage"), rc.CompanyHandler.Delete)
 
 	// Company Members Management
@@ -110,6 +114,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/coa-groups/select", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.read"), rc.COAGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa-groups/destroy", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Destroy)
 	rc.App.Delete("/api/v1/coa-groups/:id", rc.RbacEngine.Require("coa_groups.manage"), rc.COAGroupHandler.Delete)
 
 	// COA Subgroup Management
@@ -118,6 +123,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/coa-subgroups/select", cache.New(cache.Config{Expiration: 5 * time.Minute}), rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.SelectDropdownList)
 	rc.App.Get("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.read"), rc.COASubGroupHandler.FindById)
 	rc.App.Put("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Update)
+	rc.App.Delete("/api/v1/coa-subgroups/destroy", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Destroy)
 	rc.App.Delete("/api/v1/coa-subgroups/:id", rc.RbacEngine.Require("coa_subgroups.manage"), rc.COASubGroupHandler.Delete)
 
 	// COA Management
@@ -125,6 +131,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Post("/api/v1/coa", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Create)
 	rc.App.Get("/api/v1/coa/:id", rc.RbacEngine.Require("coa.read"), rc.COAHandler.FindById)
 	rc.App.Put("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Update)
+	rc.App.Delete("/api/v1/coa/destroy", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Destroy)
 	rc.App.Delete("/api/v1/coa/:id", rc.RbacEngine.Require("coa.manage"), rc.COAHandler.Delete)
 
 	// Company Configuration Management
@@ -143,6 +150,7 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/journal_entries", rc.RbacEngine.Require("transactions.read"), rc.JournalEntryHandler.FindAll)
 	rc.App.Get("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.read"), rc.JournalEntryHandler.FindById)
 	rc.App.Put("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Update)
+	rc.App.Delete("/api/v1/journal_entries/destroy", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Destroy)
 	rc.App.Delete("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Delete)
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Void)

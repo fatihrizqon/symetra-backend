@@ -20,6 +20,7 @@ type IJournalEntryService interface {
 	Delete(companyId, id uuid.UUID) error
 	Post(companyId, id uuid.UUID) error
 	Void(companyId, id uuid.UUID) error
+	Destroy(companyId uuid.UUID, ids []uuid.UUID) error
 }
 
 type JournalEntryService struct {
@@ -221,3 +222,11 @@ func (s *JournalEntryService) Void(companyId, id uuid.UUID) error {
 	}
 	return s.repo.Void(companyId, id)
 }
+
+func (s *JournalEntryService) Destroy(companyId uuid.UUID, ids []uuid.UUID) error {
+	if len(ids) == 0 {
+		return errors.New("no ids provided")
+	}
+	return s.repo.BulkDestroy(companyId, ids)
+}
+

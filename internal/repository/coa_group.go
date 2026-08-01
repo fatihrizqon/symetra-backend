@@ -27,6 +27,7 @@ type ICOAGroupRepository interface {
 	Delete(companyID, entityId uuid.UUID) error
 	HasSubgroups(companyID, entityId uuid.UUID) (bool, error)
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error)
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type COAGroupRepository struct {
@@ -127,3 +128,10 @@ func (r *COAGroupRepository) FindByName(companyID uuid.UUID, name string) (entit
 	}
 	return entity, nil
 }
+
+func (r *COAGroupRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		return tx.Where("company_id = ? AND id IN ?", companyID, ids).Delete(&entity.COAGroup{}).Error
+	})
+}
+
