@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
@@ -63,7 +62,7 @@ func (r *CompanyRepository) FindAll(qp *util.QueryParams) ([]entity.Company, int
 	var entities []entity.Company
 	var totalCount int64
 
-	query := r.Db.Model(&entity.Company{}).Where("deleted_at IS NULL")
+	query := r.Db.Model(&entity.Company{})
 	query = util.ApplySearch(query, qp)
 	query = entity.Company{}.ApplyFilters(query, qp.Filters)
 
@@ -163,16 +162,15 @@ func (r *CompanyRepository) Update(entity entity.Company) error {
 }
 
 func (r *CompanyRepository) Delete(id uuid.UUID) error {
-	if err := r.Db.Model(&entity.Company{}).Where("id = ?", id).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.Db.Model(&entity.Company{}).Where("id = ?", id).Delete(&entity.Company{}).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func (r *CompanyRepository) BulkDestroy(ids []uuid.UUID) error {
-	if err := r.Db.Model(&entity.Company{}).Where("id IN ?", ids).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.Db.Model(&entity.Company{}).Where("id IN ?", ids).Delete(&entity.Company{}).Error; err != nil {
 		return err
 	}
 	return nil
 }
-

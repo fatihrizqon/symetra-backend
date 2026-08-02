@@ -62,7 +62,7 @@ func (r *UserRepository) FindAll(qp *util.QueryParams) ([]entity.User, int, erro
 	var entities []entity.User
 	var totalCount int64
 
-	query := r.Db.Model(&entity.User{}).Preload("Avatar").Preload("Roles").Where("deleted_at IS NULL")
+	query := r.Db.Model(&entity.User{}).Preload("Avatar").Preload("Roles")
 	query = util.ApplySearch(query, qp)
 	query = entity.User{}.ApplyFilters(query, qp.Filters)
 
@@ -99,7 +99,7 @@ func (r *UserRepository) Update(entity entity.User) error {
 }
 
 func (r *UserRepository) Delete(id uuid.UUID) error {
-	if err := r.Db.Model(&entity.User{}).Where("id = ?", id).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.Db.Model(&entity.User{}).Where("id = ?", id).Delete(&entity.User{}).Error; err != nil {
 		return err
 	}
 	return nil
@@ -147,7 +147,7 @@ func (r *UserRepository) CountVerified(ctx context.Context) (int64, error) {
 }
 
 func (r *UserRepository) BulkDestroy(ids []uuid.UUID) error {
-	if err := r.Db.Model(&entity.User{}).Where("id IN ?", ids).Update("deleted_at", time.Now()).Error; err != nil {
+	if err := r.Db.Model(&entity.User{}).Where("id IN ?", ids).Delete(&entity.User{}).Error; err != nil {
 		return err
 	}
 	return nil

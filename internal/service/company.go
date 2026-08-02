@@ -113,7 +113,7 @@ func (s *CompanyService) FindAll(qp *util.QueryParams) ([]response.CompanyRespon
 			CreatedBy: c.CreatedBy,
 			CreatedAt: c.CreatedAt,
 			UpdatedAt: c.UpdatedAt,
-			DeletedAt: c.DeletedAt,
+
 		}
 		resps = append(resps, resp)
 	}
@@ -139,7 +139,7 @@ func (s *CompanyService) FindById(reqId uuid.UUID) (response.CompanyResponse, er
 		Currency:  c.Currency,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-		DeletedAt: c.DeletedAt,
+
 	}
 
 	return resp, nil
@@ -168,7 +168,7 @@ func (s *CompanyService) FindMyCompanies(userId uuid.UUID) ([]response.MyCompany
 				CreatedBy: c.CreatedBy,
 				CreatedAt: c.CreatedAt,
 				UpdatedAt: c.UpdatedAt,
-				DeletedAt: c.DeletedAt,
+
 			},
 			Role: m.Role,
 		})
@@ -208,7 +208,7 @@ func (s *CompanyService) FindMembersByCompany(companyId uuid.UUID) ([]response.C
 				CreatedBy: m.Company.CreatedBy,
 				CreatedAt: m.Company.CreatedAt,
 				UpdatedAt: m.Company.UpdatedAt,
-				DeletedAt: m.Company.DeletedAt,
+
 			},
 		})
 	}
@@ -259,7 +259,7 @@ func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy
 			CreatedBy: created.Company.CreatedBy,
 			CreatedAt: created.Company.CreatedAt,
 			UpdatedAt: created.Company.UpdatedAt,
-			DeletedAt: created.Company.DeletedAt,
+
 		},
 	}, nil
 }
@@ -338,7 +338,7 @@ func (s *CompanyService) Update(req request.CompanyUpdateRequest) (response.Comp
 		Currency:  c.Currency,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-		DeletedAt: c.DeletedAt,
+
 	}, nil
 }
 
@@ -364,7 +364,7 @@ func (s *CompanyService) Delete(reqId uuid.UUID) (response.CompanyResponse, erro
 		Currency:  c.Currency,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-		DeletedAt: c.DeletedAt,
+
 	}, nil
 }
 
@@ -396,7 +396,7 @@ func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (
 		CreatedBy: c.CreatedBy,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-		DeletedAt: c.DeletedAt,
+
 	}, nil
 }
 
@@ -427,7 +427,7 @@ func (s *CompanyService) GetActiveCompany(sessionID uuid.UUID) (response.Company
 		CreatedBy: c.CreatedBy,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-		DeletedAt: c.DeletedAt,
+
 	}, nil
 }
 

@@ -25,7 +25,7 @@ type User struct {
 	Avatar          *File      `gorm:"foreignKey:AvatarFileId" json:"avatar,omitempty"`
 	CreatedAt       time.Time  `gorm:"autoCreateTime;" json:"created_at"`
 	UpdatedAt       time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
-	DeletedAt       time.Time  `gorm:"default:null;" json:"deleted_at"`
+
 }
 
 func (User) SearchableFields() []string {

@@ -19,7 +19,7 @@ type CompanyResponse struct {
 	CreatedBy uuid.UUID  `json:"created_by"`
 	CreatedAt time.Time  `json:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at"`
-	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+
 }
 
 type CompanyMemberResponse struct {

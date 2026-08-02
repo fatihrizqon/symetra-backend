@@ -53,11 +53,12 @@ func (s *UserService) Create(req request.UserCreateRequest) (entity.User, error)
 	}
 
 	u := entity.User{
-		Username: strings.ToLower(req.Username),
-		Name:     req.Name,
+		Username: strings.ToLower(strings.TrimSpace(req.Username)),
+		Name:     strings.TrimSpace(req.Name),
 		Email:    strings.ToLower(strings.TrimSpace(req.Email)),
 		Password: string(hashed),
 	}
+
 
 	err = s.IUserRepository.WithTransaction(func(txRepo repository.IUserRepository) error {
 		var txErr error
@@ -93,7 +94,7 @@ func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, in
 			Status:    u.Status,
 			CreatedAt: u.CreatedAt,
 			UpdatedAt: u.UpdatedAt,
-			DeletedAt: u.DeletedAt,
+
 		}
 		if u.Avatar != nil {
 			resp.AvatarURL = "/uploads/" + u.Avatar.Path
@@ -121,7 +122,7 @@ func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
 		Status:    u.Status,
 		CreatedAt: u.CreatedAt,
 		UpdatedAt: u.UpdatedAt,
-		DeletedAt: u.DeletedAt,
+
 	}
 
 	if u.Avatar != nil {
