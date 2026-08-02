@@ -1,11 +1,12 @@
 DO $$
 DECLARE
-    v_company_id uuid := '39518c41-6582-466c-8ee0-5f88323fdfed';
-    v_fiscal_year_id uuid := '499aa986-dd6f-4afa-8ddf-86874a5a7269';
+    v_company_id uuid := NULL;
+    v_fiscal_year_id uuid := NULL;
     v_coa_cash uuid;
     v_coa_sales uuid;
     v_coa_cogs uuid;
     v_coa_inv uuid;
+    v_coa_equity uuid;
     v_fiscal_period_id uuid;
 BEGIN
     -- 1. Resolve COA
@@ -13,13 +14,28 @@ BEGIN
     SELECT id INTO v_coa_sales FROM coa WHERE company_id = v_company_id AND code = '4010101';
     SELECT id INTO v_coa_cogs FROM coa WHERE company_id = v_company_id AND code = '5010101';
     SELECT id INTO v_coa_inv FROM coa WHERE company_id = v_company_id AND code = '1030101';
+    SELECT id INTO v_coa_equity FROM coa WHERE company_id = v_company_id AND code = '3010101';
 
-    IF v_coa_cash IS NULL OR v_coa_sales IS NULL OR v_coa_cogs IS NULL OR v_coa_inv IS NULL THEN
+    IF v_coa_cash IS NULL OR v_coa_sales IS NULL OR v_coa_cogs IS NULL OR v_coa_inv IS NULL OR v_coa_equity IS NULL THEN
         RAISE EXCEPTION 'COA not found';
     END IF;
 
     -- Resolve fiscal_period_id for date 2025-09-10
     SELECT id INTO v_fiscal_period_id FROM fiscal_periods WHERE fiscal_year_id = v_fiscal_year_id AND '2025-09-10' >= start_date AND '2025-09-10' <= end_date;
+
+    -- ============================================================
+    -- 0. MODAL AWAL: Pemilik menyetorkan modal berupa persediaan
+    --    Total = seluruh HPP penjualan = 1.374.400
+    --    Dr Inventory (asset+), Cr Capital (equity+)
+    -- ============================================================
+    DECLARE v_j_0 uuid := gen_random_uuid();
+    BEGIN
+        INSERT INTO journal_entries (id, company_id, fiscal_period_id, journal_number, type, date, description, status, total_debit, total_credit, created_at, updated_at)
+        VALUES (v_j_0, v_company_id, v_fiscal_period_id, 'JE-202509-0000', 'equity', '2025-09-10', 'Modal Awal - Setoran Persediaan dari Pemilik', 'posted', 1374400.0, 1374400.0, now(), now());
+        INSERT INTO journal_lines (id, journal_entry_id, coa_id, description, debit, credit, created_at, updated_at) VALUES
+        (gen_random_uuid(), v_j_0, v_coa_inv, 'Persediaan masuk - Modal awal', 1374400.0, 0, now(), now()),
+        (gen_random_uuid(), v_j_0, v_coa_equity, 'Modal disetor pemilik', 0, 1374400.0, now(), now());
+    END;
 
     DECLARE v_j_1 uuid := gen_random_uuid();
     BEGIN

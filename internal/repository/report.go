@@ -189,10 +189,31 @@ func (r *ReportRepository) GetBalanceSheet(companyId uuid.UUID, dateTo string) (
 		  AND cg.type IN ('asset', 'liability', 'equity')
 		  AND je.date <= ?
 		GROUP BY cg.type, cg.name, cs.name, c.code, c.name
+
+		UNION ALL
+
+		SELECT
+			'equity' AS account_type,
+			'Equities' AS group_name,
+			'Current Year Earnings' AS subgroup_name,
+			'3030101' AS code,
+			'Current Year Net Income' AS name,
+			SUM(jl.debit) - SUM(jl.credit) AS balance
+		FROM journal_lines jl
+		JOIN journal_entries je ON jl.journal_entry_id = je.id
+		JOIN coa c ON jl.coa_id = c.id
+		JOIN coa_subgroups cs ON c.subgroup_id = cs.id
+		JOIN coa_groups cg ON cs.group_id = cg.id
+		WHERE je.company_id = ?
+		  AND je.status = 'posted'
+		  AND cg.type IN ('revenue', 'expense')
+		  AND je.date <= ?
+		HAVING SUM(jl.debit) - SUM(jl.credit) != 0
 	`
-	err := r.db.Raw(query, companyId, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyId, dateTo, companyId, dateTo).Scan(&rows).Error
 	return rows, err
 }
+
 
 func (r *ReportRepository) GetCashFlow(companyId uuid.UUID, cashCoaIds []uuid.UUID, dateFrom, dateTo string) ([]ReportCashFlowRow, error) {
 	var rows []ReportCashFlowRow
