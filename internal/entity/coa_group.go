@@ -32,15 +32,15 @@ func (t COAGroupType) IsDebitNormal() bool {
 }
 
 type COAGroup struct {
-	Id            uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId     uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"`
-	Code          string       `gorm:"type:character varying;not null;" json:"code"`
-	Name          string       `gorm:"type:character varying;not null;" json:"name"`
-	Type          COAGroupType `gorm:"type:character varying;not null;default:'asset';" json:"type"`
-	Category      *string      `gorm:"type:character varying;" json:"category"`
-	Status        int          `gorm:"type:int;not null;default:1;" json:"status"`
-	CreatedAt     time.Time    `gorm:"autoCreateTime;" json:"created_at"`
-	UpdatedAt     time.Time    `gorm:"autoUpdateTime;" json:"updated_at"`
+	Id        uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"`
+	Code      string       `gorm:"type:character varying;not null; uniqueIndex;" json:"code"`
+	Name      string       `gorm:"type:character varying;not null;" json:"name"`
+	Type      COAGroupType `gorm:"type:character varying;not null;default:'asset';" json:"type"`
+	Category  *string      `gorm:"type:character varying;" json:"category"`
+	Status    int          `gorm:"type:int;not null;default:1;" json:"status"`
+	CreatedAt time.Time    `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt time.Time    `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
 func (COAGroup) SearchableFields() []string { return []string{"code", "name"} }

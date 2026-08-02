@@ -10,19 +10,19 @@ import (
 func (COA) TableName() string { return "coa" }
 
 type COA struct {
-	Id            uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId     uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"`
-	SubgroupId    uuid.UUID    `gorm:"type:uuid;not null;index;" json:"subgroup_id"`
-	SubGroup      *COASubGroup `gorm:"foreignKey:SubgroupId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"subgroup,omitempty"`
-	Code          string       `gorm:"type:character varying;not null;" json:"code"`
-	Name          string       `gorm:"type:character varying;not null;" json:"name"`
-	CurrencyCode  string       `gorm:"type:character varying;not null;default:'IDR';" json:"currency_code"`
-	IsContra      bool         `gorm:"type:boolean;not null;default:false;" json:"is_contra"`
-	ControlType   string       `gorm:"type:character varying;not null;default:'';" json:"control_type"`
-	Active        bool         `gorm:"type:boolean;not null;default:true;" json:"active"`
-	Status        int          `gorm:"type:int;not null;default:1;" json:"status"`
-	CreatedAt     time.Time    `gorm:"autoCreateTime;" json:"created_at"`
-	UpdatedAt     time.Time    `gorm:"autoUpdateTime;" json:"updated_at"`
+	Id           uuid.UUID    `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId    uuid.UUID    `gorm:"type:uuid;not null;index;" json:"company_id"`
+	SubgroupId   uuid.UUID    `gorm:"type:uuid;not null;index;" json:"subgroup_id"`
+	SubGroup     *COASubGroup `gorm:"foreignKey:SubgroupId;constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;" json:"subgroup,omitempty"`
+	Code         string       `gorm:"type:character varying;not null; uniqueIndex;" json:"code"`
+	Name         string       `gorm:"type:character varying;not null;" json:"name"`
+	CurrencyCode string       `gorm:"type:character varying;not null;default:'IDR';" json:"currency_code"`
+	IsContra     bool         `gorm:"type:boolean;not null;default:false;" json:"is_contra"`
+	ControlType  string       `gorm:"type:character varying;not null;default:'';" json:"control_type"`
+	Active       bool         `gorm:"type:boolean;not null;default:true;" json:"active"`
+	Status       int          `gorm:"type:int;not null;default:1;" json:"status"`
+	CreatedAt    time.Time    `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt    time.Time    `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
 func (COA) SearchableFields() []string { return []string{"coa.name", "coa.code"} }

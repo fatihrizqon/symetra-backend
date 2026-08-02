@@ -29,6 +29,7 @@ type RouteConfig struct {
 	CompanyConfigurationHandler *handler.CompanyConfigurationHandler
 	FiscalYearHandler           *handler.FiscalYearHandler
 	JournalEntryHandler         *handler.JournalEntryHandler
+	ReportHandler               *handler.ReportHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -154,4 +155,13 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Delete("/api/v1/journal_entries/:id", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Delete)
 	rc.App.Put("/api/v1/journal_entries/:id/post", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Post)
 	rc.App.Put("/api/v1/journal_entries/:id/void", rc.RbacEngine.Require("transactions.manage"), rc.JournalEntryHandler.Void)
+
+	// Reports
+	rc.App.Get("/api/v1/reports/general-ledger", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.GeneralLedger)
+	rc.App.Get("/api/v1/reports/trial-balance", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.TrialBalance)
+	rc.App.Get("/api/v1/reports/profit-loss", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.ProfitLoss)
+	rc.App.Get("/api/v1/reports/balance-sheet", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.BalanceSheet)
+	rc.App.Get("/api/v1/reports/cash-flow", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.CashFlow)
+	rc.App.Get("/api/v1/reports/equity-statement", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.EquityStatement)
+	rc.App.Get("/api/v1/reports/journal-book", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.JournalBook)
 }

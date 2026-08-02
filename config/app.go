@@ -64,6 +64,7 @@ func Bootstrap(deps *BootstrapConfig) {
 	companyConfigurationRepository := repository.NewCompanyConfigurationRepository(deps.DB)
 	fiscalYearRepository := repository.NewFiscalYearRepository(deps.DB)
 	journalEntryRepository := repository.NewJournalEntryRepository(deps.DB)
+	reportRepository := repository.NewReportRepository(deps.DB)
 
 	// ── Services ──────────────────────────────────────────────────────────────
 	emailService := service.NewEmailService(deps.Log)
@@ -78,6 +79,7 @@ func Bootstrap(deps *BootstrapConfig) {
 	companyConfigurationService := service.NewCompanyConfigurationService(companyConfigurationRepository, deps.Validate)
 	fiscalYearService := service.NewFiscalYearService(fiscalYearRepository, deps.Validate)
 	journalEntryService := service.NewJournalEntryService(journalEntryRepository, coaRepository, fiscalYearRepository)
+	reportService := service.NewReportService(reportRepository, companyConfigurationRepository)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	fileHandler := handler.NewFileHandler(fileService)
@@ -91,6 +93,7 @@ func Bootstrap(deps *BootstrapConfig) {
 	companyConfigurationHandler := handler.NewCompanyConfigurationHandler(companyConfigurationService)
 	fiscalYearHandler := handler.NewFiscalYearHandler(fiscalYearService)
 	journalEntryHandler := handler.NewJournalEntryHandler(journalEntryService)
+	reportHandler := handler.NewReportHandler(reportService)
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -125,6 +128,7 @@ func Bootstrap(deps *BootstrapConfig) {
 		CompanyConfigurationHandler: companyConfigurationHandler,
 		FiscalYearHandler:           fiscalYearHandler,
 		JournalEntryHandler:         journalEntryHandler,
+		ReportHandler:               reportHandler,
 	}
 
 	routeConfig.Setup()

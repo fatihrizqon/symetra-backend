@@ -148,6 +148,6 @@ func (r *JournalEntryRepository) Void(companyId, id uuid.UUID) error {
 }
 
 func (r *JournalEntryRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
+	fmt.Println(companyId)
 	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyId, ids, entity.JournalStatusDraft).Delete(&entity.JournalEntry{}).Error
 }
-
