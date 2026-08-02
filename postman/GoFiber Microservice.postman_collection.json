@@ -1959,7 +1959,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/general-ledger?date_from=2025-01-01&date_to=2025-12-31&coa_id={{coa_id}}",
+                            "raw": "{{base_url}}/reports/general-ledger?date_from=2025-01-01&date_to=2025-12-31&coa_id={{coa_id}}",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2004,7 +2004,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/trial-balance?date_from=2025-01-01&date_to=2025-12-31",
+                            "raw": "{{base_url}}/reports/trial-balance?date_from=2025-01-01&date_to=2025-12-31",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2045,7 +2045,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/profit-loss?date_from=2025-01-01&date_to=2025-12-31",
+                            "raw": "{{base_url}}/reports/profit-loss?date_from=2025-01-01&date_to=2025-12-31",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2086,7 +2086,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/balance-sheet?date_to=2025-12-31",
+                            "raw": "{{base_url}}/reports/balance-sheet?date_to=2025-12-31",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2123,7 +2123,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/cash-flow?date_from=2025-01-01&date_to=2025-12-31",
+                            "raw": "{{base_url}}/reports/cash-flow?date_from=2025-01-01&date_to=2025-12-31",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2164,7 +2164,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/equity-statement?date_from=2025-01-01&date_to=2025-12-31",
+                            "raw": "{{base_url}}/reports/equity-statement?date_from=2025-01-01&date_to=2025-12-31",
                             "host": [
                                 "{{base_url}}"
                             ],
@@ -2205,7 +2205,7 @@
                             }
                         ],
                         "url": {
-                            "raw": "{{base_url}}/api/v1/reports/journal-book?date_from=2025-01-01&date_to=2025-12-31&type=general",
+                            "raw": "{{base_url}}/reports/journal-book?date_from=2025-01-01&date_to=2025-12-31&type=general",
                             "host": [
                                 "{{base_url}}"
                             ],
