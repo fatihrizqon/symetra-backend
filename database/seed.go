@@ -19,14 +19,15 @@ func SeedData(db *gorm.DB) {
 func seedAdminUser(db *gorm.DB) {
 	// 1. Seed Permissions
 	var (
-		pUserRead, pUserManage, pRbacManage  entity.Permission
-		pCompanyRead, pCompanyManage         entity.Permission
-		pCoaGroupRead, pCoaGroupManage       entity.Permission
-		pCoaSubgroupRead, pCoaSubgroupManage entity.Permission
-		pCoaRead, pCoaManage                 entity.Permission
-		pCompanyConfigRead, pCompanyConfigManage   entity.Permission
-		pFiscalYearRead, pFiscalYearManage         entity.Permission
-		pTransactionsRead, pTransactionsManage     entity.Permission
+		pUserRead, pUserManage, pRbacManage      entity.Permission
+		pCompanyRead, pCompanyManage             entity.Permission
+		pCoaGroupRead, pCoaGroupManage           entity.Permission
+		pCoaSubgroupRead, pCoaSubgroupManage     entity.Permission
+		pCoaRead, pCoaManage                     entity.Permission
+		pCompanyConfigRead, pCompanyConfigManage entity.Permission
+		pFiscalYearRead, pFiscalYearManage       entity.Permission
+		pTransactionsRead, pTransactionsManage   entity.Permission
+		pReportsRead                             entity.Permission
 	)
 
 	if err := db.Where("name = ?", "users.read").First(&pUserRead).Error; err != nil {
@@ -114,6 +115,11 @@ func seedAdminUser(db *gorm.DB) {
 		db.Create(&pTransactionsManage)
 	}
 
+	if err := db.Where("name = ?", "reports.read").First(&pReportsRead).Error; err != nil {
+		pReportsRead = entity.Permission{Name: "reports.read", Description: "Read reports"}
+		db.Create(&pReportsRead)
+	}
+
 	// 2. Seed Role
 	var roleAdmin entity.Role
 	if err := db.Where("name = ?", "admin").First(&roleAdmin).Error; err != nil {
@@ -129,11 +135,12 @@ func seedAdminUser(db *gorm.DB) {
 				pCompanyConfigRead, pCompanyConfigManage,
 				pFiscalYearRead, pFiscalYearManage,
 				pTransactionsRead, pTransactionsManage,
+				pReportsRead,
 			},
 		}
 		db.Create(&roleAdmin)
 	} else {
-		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage, &pTransactionsRead, &pTransactionsManage)
+		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage, &pTransactionsRead, &pTransactionsManage, &pReportsRead)
 	}
 
 	var user entity.User
