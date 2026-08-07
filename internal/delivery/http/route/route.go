@@ -30,6 +30,12 @@ type RouteConfig struct {
 	FiscalYearHandler           *handler.FiscalYearHandler
 	JournalEntryHandler         *handler.JournalEntryHandler
 	ReportHandler               *handler.ReportHandler
+	VendorHandler               *handler.VendorHandler
+	CustomerHandler             *handler.CustomerHandler
+	PurchaseOrderHandler        *handler.PurchaseOrderHandler
+	BillHandler                 *handler.BillHandler
+	QuotationHandler            *handler.QuotationHandler
+	InvoiceHandler              *handler.InvoiceHandler
 }
 
 func (rc *RouteConfig) Setup() {
@@ -164,4 +170,64 @@ func (rc *RouteConfig) SetupAuthRoute() {
 	rc.App.Get("/api/v1/reports/cash-flow", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.CashFlow)
 	rc.App.Get("/api/v1/reports/equity-statement", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.EquityStatement)
 	rc.App.Get("/api/v1/reports/journal-book", rc.RbacEngine.Require("reports.read"), rc.ReportHandler.JournalBook)
+
+	// Vendor Management
+	rc.App.Get("/api/v1/vendors", rc.RbacEngine.Require("transactions.read"), rc.VendorHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/vendors", rc.RbacEngine.Require("transactions.read"), rc.VendorHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/vendors", rc.RbacEngine.Require("transactions.manage"), rc.VendorHandler.Create)
+	rc.App.Get("/api/v1/vendors/:id", rc.RbacEngine.Require("transactions.read"), rc.VendorHandler.FindById)
+	rc.App.Put("/api/v1/vendors/:id", rc.RbacEngine.Require("transactions.manage"), rc.VendorHandler.Update)
+	rc.App.Delete("/api/v1/vendors/destroy", rc.RbacEngine.Require("transactions.manage"), rc.VendorHandler.Destroy)
+	rc.App.Delete("/api/v1/vendors/:id", rc.RbacEngine.Require("transactions.manage"), rc.VendorHandler.Delete)
+
+	// Customer Management
+	rc.App.Get("/api/v1/customers", rc.RbacEngine.Require("transactions.read"), rc.CustomerHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/customers", rc.RbacEngine.Require("transactions.read"), rc.CustomerHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/customers", rc.RbacEngine.Require("transactions.manage"), rc.CustomerHandler.Create)
+	rc.App.Get("/api/v1/customers/:id", rc.RbacEngine.Require("transactions.read"), rc.CustomerHandler.FindById)
+	rc.App.Put("/api/v1/customers/:id", rc.RbacEngine.Require("transactions.manage"), rc.CustomerHandler.Update)
+	rc.App.Delete("/api/v1/customers/destroy", rc.RbacEngine.Require("transactions.manage"), rc.CustomerHandler.Destroy)
+	rc.App.Delete("/api/v1/customers/:id", rc.RbacEngine.Require("transactions.manage"), rc.CustomerHandler.Delete)
+
+	// Purchase Order Management
+	rc.App.Get("/api/v1/purchase-orders", rc.RbacEngine.Require("transactions.read"), rc.PurchaseOrderHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/purchase-orders", rc.RbacEngine.Require("transactions.read"), rc.PurchaseOrderHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/purchase-orders", rc.RbacEngine.Require("transactions.manage"), rc.PurchaseOrderHandler.Create)
+	rc.App.Get("/api/v1/purchase-orders/:id", rc.RbacEngine.Require("transactions.read"), rc.PurchaseOrderHandler.FindById)
+	rc.App.Put("/api/v1/purchase-orders/:id", rc.RbacEngine.Require("transactions.manage"), rc.PurchaseOrderHandler.Update)
+	rc.App.Delete("/api/v1/purchase-orders/destroy", rc.RbacEngine.Require("transactions.manage"), rc.PurchaseOrderHandler.Destroy)
+	rc.App.Delete("/api/v1/purchase-orders/:id", rc.RbacEngine.Require("transactions.manage"), rc.PurchaseOrderHandler.Delete)
+	rc.App.Put("/api/v1/purchase-orders/:id/approve", rc.RbacEngine.Require("transactions.manage"), rc.PurchaseOrderHandler.Approve)
+
+	// Bill Management
+	rc.App.Get("/api/v1/bills", rc.RbacEngine.Require("transactions.read"), rc.BillHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/bills", rc.RbacEngine.Require("transactions.read"), rc.BillHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/bills", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Create)
+	rc.App.Get("/api/v1/bills/:id", rc.RbacEngine.Require("transactions.read"), rc.BillHandler.FindById)
+	rc.App.Put("/api/v1/bills/:id", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Update)
+	rc.App.Delete("/api/v1/bills/destroy", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Destroy)
+	rc.App.Delete("/api/v1/bills/:id", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Delete)
+	rc.App.Put("/api/v1/bills/:id/confirm", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Confirm)
+	rc.App.Post("/api/v1/bills/:id/pay", rc.RbacEngine.Require("transactions.manage"), rc.BillHandler.Pay)
+
+	// Quotation Management
+	rc.App.Get("/api/v1/quotations", rc.RbacEngine.Require("transactions.read"), rc.QuotationHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/quotations", rc.RbacEngine.Require("transactions.read"), rc.QuotationHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/quotations", rc.RbacEngine.Require("transactions.manage"), rc.QuotationHandler.Create)
+	rc.App.Get("/api/v1/quotations/:id", rc.RbacEngine.Require("transactions.read"), rc.QuotationHandler.FindById)
+	rc.App.Put("/api/v1/quotations/:id", rc.RbacEngine.Require("transactions.manage"), rc.QuotationHandler.Update)
+	rc.App.Delete("/api/v1/quotations/destroy", rc.RbacEngine.Require("transactions.manage"), rc.QuotationHandler.Destroy)
+	rc.App.Delete("/api/v1/quotations/:id", rc.RbacEngine.Require("transactions.manage"), rc.QuotationHandler.Delete)
+	rc.App.Put("/api/v1/quotations/:id/approve", rc.RbacEngine.Require("transactions.manage"), rc.QuotationHandler.Approve)
+
+	// Invoice Management
+	rc.App.Get("/api/v1/invoices", rc.RbacEngine.Require("transactions.read"), rc.InvoiceHandler.FindAll)
+	rc.App.Get("/api/v1/dropdown/invoices", rc.RbacEngine.Require("transactions.read"), rc.InvoiceHandler.SelectDropdownList)
+	rc.App.Post("/api/v1/invoices", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Create)
+	rc.App.Get("/api/v1/invoices/:id", rc.RbacEngine.Require("transactions.read"), rc.InvoiceHandler.FindById)
+	rc.App.Put("/api/v1/invoices/:id", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Update)
+	rc.App.Delete("/api/v1/invoices/destroy", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Destroy)
+	rc.App.Delete("/api/v1/invoices/:id", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Delete)
+	rc.App.Put("/api/v1/invoices/:id/confirm", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Confirm)
+	rc.App.Post("/api/v1/invoices/:id/pay", rc.RbacEngine.Require("transactions.manage"), rc.InvoiceHandler.Pay)
 }

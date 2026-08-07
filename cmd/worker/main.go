@@ -20,7 +20,7 @@ func main() {
 		Log:    logger,
 		Config: viper,
 	})
-	defer asynqClient.Close()
+	defer func() { _ = asynqClient.Close() }()
 
 	if err := srv.Run(mux); err != nil {
 		log.Fatalf("could not start server: %v", err)

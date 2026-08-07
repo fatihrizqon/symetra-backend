@@ -104,7 +104,7 @@ func detectMimeType(file *multipart.FileHeader) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	buf := make([]byte, 512)
 	n, err := src.Read(buf)

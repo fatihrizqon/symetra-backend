@@ -1,2257 +1,3901 @@
 {
-    "info": {
-        "_postman_id": "db1a3f9a-42b1-4bad-bad8-307bab499810",
-        "name": "Symetra Backend",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-        "_exporter_id": "3446240"
-    },
-    "auth": {
-        "type": "bearer",
-        "bearer": [
-            {
-                "key": "token",
-                "value": "{{access_token}}",
-                "type": "string"
-            }
-        ]
-    },
-    "event": [
-        {
-            "listen": "test",
-            "script": {
-                "type": "text/javascript",
-                "exec": [
-                    "// Global guard: kalau 401, kemungkinan access_token sudah revoked/expired.",
-                    "if (pm.response.code === 401) {",
-                    "    console.warn('401 Unauthorized - access_token mungkin kosong/expired/revoked. Login ulang atau refresh token.');",
-                    "}"
-                ]
-            }
-        }
-    ],
-    "item": [
-        {
-            "name": "Auth",
-            "item": [
-                {
-                    "name": "Register",
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"username\": \"testuser\", \n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/auth/register"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Login",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Simpan access_token & refresh_token otomatis ke collection variable",
-                                    "// supaya bisa dipakai request lain via {{access_token}} tanpa input manual.",
-                                    "if (pm.response.code === 200) {",
-                                    "    const jsonData = pm.response.json();",
-                                    "",
-                                    "    // sesuaikan path field ini dengan struktur response asli backend kamu",
-                                    "    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
-                                    "    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
-                                    "",
-                                    "    if (accessToken) {",
-                                    "        pm.collectionVariables.set('access_token', accessToken);",
-                                    "        console.log('access_token tersimpan.');",
-                                    "    } else {",
-                                    "        console.warn('access_token tidak ditemukan di response Login.');",
-                                    "    }",
-                                    "",
-                                    "    if (refreshToken) {",
-                                    "        pm.collectionVariables.set('refresh_token', refreshToken);",
-                                    "    }",
-                                    "} else {",
-                                    "    console.warn('Login gagal, status: ' + pm.response.code);",
-                                    "}"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/auth/login"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Refresh Token",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Refresh token juga menghasilkan access_token baru -> update collection variable.",
-                                    "if (pm.response.code === 200) {",
-                                    "    const jsonData = pm.response.json();",
-                                    "    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
-                                    "    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
-                                    "",
-                                    "    if (accessToken) {",
-                                    "        pm.collectionVariables.set('access_token', accessToken);",
-                                    "        console.log('access_token diperbarui via refresh.');",
-                                    "    }",
-                                    "    if (refreshToken) {",
-                                    "        pm.collectionVariables.set('refresh_token', refreshToken);",
-                                    "    }",
-                                    "} else {",
-                                    "    console.warn('Refresh token gagal, kemungkinan refresh_token sudah revoked/expired.');",
-                                    "}"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "auth": {
-                            "type": "noauth"
-                        },
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/auth/refresh"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Logout",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Setelah logout, access_token dianggap revoked di server.",
-                                    "// Hapus dari collection variable supaya request berikutnya otomatis unauthenticated.",
-                                    "if (pm.response.code === 200) {",
-                                    "    pm.collectionVariables.unset('access_token');",
-                                    "    pm.collectionVariables.unset('refresh_token');",
-                                    "    console.log('access_token & refresh_token dihapus (revoked).');",
-                                    "}"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "url": "{{base_url}}/auth/logout"
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Users",
-            "item": [
-                {
-                    "name": "Upload Avatar",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "formdata",
-                            "formdata": [
-                                {
-                                    "key": "avatar",
-                                    "type": "file",
-                                    "src": ""
-                                }
-                            ]
-                        },
-                        "url": "{{base_url}}/users/me/avatar"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/users"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/users/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"username\": \"testuser\", \n  \"name\": \"Test User Updated\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/users/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/users/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Lock",
-                    "request": {
-                        "method": "PATCH",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/users/:id/lock",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id",
-                                "lock"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Unlock",
-                    "request": {
-                        "method": "PATCH",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/users/:id/unlock",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id",
-                                "unlock"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/users/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Files",
-            "item": [
-                {
-                    "name": "Upload",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "formdata",
-                            "formdata": [
-                                {
-                                    "key": "file",
-                                    "type": "file",
-                                    "src": ""
-                                }
-                            ]
-                        },
-                        "url": "{{base_url}}/files/upload"
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Roles",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/roles"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/roles/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrator\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/roles"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"admin-updated\",\n  \"description\": \"Administrator\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/roles/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/roles/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Assign Role To User",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"role_id\": \"uuid-here\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/users/:id/roles",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id",
-                                "roles"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Revoke Role From User",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/users/:id/roles/:role_id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "users",
-                                ":id",
-                                "roles",
-                                ":role_id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                },
-                                {
-                                    "key": "role_id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/roles/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Permissions",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/permissions"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/permissions/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "permissions",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/permissions"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/permissions/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "permissions",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/permissions/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "permissions",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Assign Permission To Role",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"permission_id\": \"uuid-here\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/roles/:id/permissions",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                ":id",
-                                "permissions"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Revoke Permission From Role",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/roles/:id/permissions/:permission_id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "roles",
-                                ":id",
-                                "permissions",
-                                ":permission_id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                },
-                                {
-                                    "key": "permission_id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/permissions/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "permissions",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Companies",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/companies"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/companies"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindMyCompanies",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/companies/mine"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Find Members By Company",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id/members",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id",
-                                "members"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Assign Member",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"user_id\": \"uuid-here\",\n  \"role\": \"member\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id/members",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id",
-                                "members"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update Member Role",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"role\": \"admin\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id/members/:user_id/role",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id",
-                                "members",
-                                ":user_id",
-                                "role"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                },
-                                {
-                                    "key": "user_id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Remove Member",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id/members/:user_id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id",
-                                "members",
-                                ":user_id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                },
-                                {
-                                    "key": "user_id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Select Company",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "type": "text/javascript",
-                                "exec": [
-                                    "// Otomatis simpan company_id ke collection variable setelah select company.",
-                                    "// Berguna untuk referensi manual jika dibutuhkan.",
-                                    "if (pm.response.code === 200) {",
-                                    "    const jsonData = pm.response.json();",
-                                    "    const companyId = jsonData.data?.id;",
-                                    "    if (companyId) {",
-                                    "        pm.collectionVariables.set('company_id', companyId);",
-                                    "        console.log('company_id tersimpan: ' + companyId);",
-                                    "    }",
-                                    "}"
-                                ]
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/companies/:id/select",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                ":id",
-                                "select"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "description": "UUID of the company to select as active"
-                                }
-                            ]
-                        },
-                        "description": "Set the active company for the current session. Call this again with a different ID to switch company. No request body required."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Get Active Company",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/companies/active",
-                        "description": "Returns the company currently active in this session. Returns 404 if no company has been selected yet."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/companies/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "companies",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "COA Groups",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/coa-groups"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Assets\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/coa-groups"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa-groups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-groups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Assets Updated\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa-groups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-groups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa-groups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-groups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Select Dropdown List",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/coa-groups/select"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa-groups/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-groups",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "COA Subgroups",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/coa-subgroups"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Current Assets\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/coa-subgroups"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa-subgroups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-subgroups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Current Assets Updated\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa-subgroups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-subgroups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa-subgroups/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-subgroups",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Select Dropdown List",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/coa-subgroups/select"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa-subgroups/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa-subgroups",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "COA",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/coa"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/coa"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/coa/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/coa/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "coa",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Company Configuration",
-            "item": [
-                {
-                    "name": "Get Configuration",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/company-configuration"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Upsert Configuration",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"enable_tax\": true,\n  \"tax_rate\": 0.11,\n  \"invoice_prefix\": \"INV\",\n  \"quotation_prefix\": \"QUO\",\n  \"invoice_due_days\": 30\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/company-configuration"
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Fiscal Years",
-            "item": [
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": "{{base_url}}/fiscal-years"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/fiscal-years/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "fiscal-years",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"name\": \"Fiscal Year 2026\",\n  \"start_date\": \"2026-01-01\",\n  \"end_date\": \"2026-12-31\",\n  \"period_type\": \"monthly\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/fiscal-years"
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Activate",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/fiscal-years/:id/activate",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "fiscal-years",
-                                ":id",
-                                "activate"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Close Period",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"reason\": \"End of month closing\"\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/fiscal-years/periods/:period_id/close",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "fiscal-years",
-                                "periods",
-                                ":period_id",
-                                "close"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "period_id"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Journal Entries",
-            "item": [
-                {
-                    "name": "Create",
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 5000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 5000000\n    }\n  ]\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": "{{base_url}}/journal_entries",
-                        "description": "Create a new journal entry in draft status. Lines must be balanced (total debit = total credit) and have at least 2 items."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindAll",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries?page=1&page_size=10",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries"
-                            ],
-                            "query": [
-                                {
-                                    "key": "page",
-                                    "value": "1"
-                                },
-                                {
-                                    "key": "page_size",
-                                    "value": "10"
-                                },
-                                {
-                                    "key": "search",
-                                    "value": "",
-                                    "disabled": true
-                                },
-                                {
-                                    "key": "status",
-                                    "value": "draft",
-                                    "disabled": true
-                                }
-                            ]
-                        },
-                        "description": "List all journal entries with pagination, search, and status filter."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "FindById",
-                    "request": {
-                        "method": "GET",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        },
-                        "description": "Get a single journal entry with its lines and COA details."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Update",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli (revisi)\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 6000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 6000000\n    }\n  ]\n}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        },
-                        "description": "Update a draft journal entry. Only draft entries can be edited."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/:id",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        },
-                        "description": "Delete a draft journal entry. Only draft entries can be deleted."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Post",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/:id/post",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                ":id",
-                                "post"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        },
-                        "description": "Post a draft journal entry. The entry date must fall within an open fiscal period. Changes status from draft to posted."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Void",
-                    "request": {
-                        "method": "PUT",
-                        "header": [],
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/:id/void",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                ":id",
-                                "void"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id"
-                                }
-                            ]
-                        },
-                        "description": "Void a posted journal entry. Changes status from posted to void."
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Bulk Delete",
-                    "request": {
-                        "method": "DELETE",
-                        "header": [
-                            {
-                                "key": "Content-Type",
-                                "value": "application/json"
-                            },
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{access_token}}"
-                            }
-                        ],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
-                        },
-                        "url": {
-                            "raw": "{{base_url}}/journal_entries/destroy",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "journal_entries",
-                                "destroy"
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        },
-        {
-            "name": "Reports",
-            "item": [
-                {
-                    "name": "General Ledger",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/general-ledger?date_from=2025-01-01&date_to=2025-12-31&coa_id={{coa_id}}",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "general-ledger"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                },
-                                {
-                                    "key": "coa_id",
-                                    "value": "{{coa_id}}"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Trial Balance",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/trial-balance?date_from=2025-01-01&date_to=2025-12-31",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "trial-balance"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Profit & Loss",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/profit-loss?date_from=2025-01-01&date_to=2025-12-31",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "profit-loss"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Balance Sheet",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/balance-sheet?date_to=2025-12-31",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "balance-sheet"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Cash Flow",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/cash-flow?date_from=2025-01-01&date_to=2025-12-31",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "cash-flow"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Equity Statement",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/equity-statement?date_from=2025-01-01&date_to=2025-12-31",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "equity-statement"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                },
-                {
-                    "name": "Journal Book",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            },
-                            {
-                                "key": "X-Company-ID",
-                                "value": "{{company_id}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{base_url}}/reports/journal-book?date_from=2025-01-01&date_to=2025-12-31&type=general",
-                            "host": [
-                                "{{base_url}}"
-                            ],
-                            "path": [
-                                "api",
-                                "v1",
-                                "reports",
-                                "journal-book"
-                            ],
-                            "query": [
-                                {
-                                    "key": "date_from",
-                                    "value": "2025-01-01"
-                                },
-                                {
-                                    "key": "date_to",
-                                    "value": "2025-12-31"
-                                },
-                                {
-                                    "key": "type",
-                                    "value": "general"
-                                }
-                            ]
-                        }
-                    },
-                    "response": []
-                }
-            ]
-        }
-    ],
-    "variable": [
-        {
-            "key": "base_url",
-            "value": "http://localhost:3000/api/v1"
-        },
-        {
-            "key": "access_token",
-            "value": ""
-        },
-        {
-            "key": "refresh_token",
-            "value": ""
-        },
-        {
-            "key": "company_id",
-            "value": ""
-        }
-    ]
+	"auth": {
+		"bearer": [
+			{
+				"key": "token",
+				"type": "string",
+				"value": "{{access_token}}"
+			}
+		],
+		"type": "bearer"
+	},
+	"event": [
+		{
+			"listen": "test",
+			"script": {
+				"exec": [
+					"// Global guard: kalau 401, kemungkinan access_token sudah revoked/expired.",
+					"if (pm.response.code === 401) {",
+					"    console.warn('401 Unauthorized - access_token mungkin kosong/expired/revoked. Login ulang atau refresh token.');",
+					"}"
+				],
+				"type": "text/javascript"
+			}
+		}
+	],
+	"info": {
+		"_exporter_id": "3446240",
+		"_postman_id": "db1a3f9a-42b1-4bad-bad8-307bab499810",
+		"name": "Symetra Backend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"item": [
+				{
+					"name": "Register",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"username\": \"testuser\", \n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/auth/register"
+					},
+					"response": []
+				},
+				{
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Simpan access_token & refresh_token otomatis ke collection variable",
+									"// supaya bisa dipakai request lain via {{access_token}} tanpa input manual.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"",
+									"    // sesuaikan path field ini dengan struktur response asli backend kamu",
+									"    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
+									"    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
+									"",
+									"    if (accessToken) {",
+									"        pm.collectionVariables.set('access_token', accessToken);",
+									"        console.log('access_token tersimpan.');",
+									"    } else {",
+									"        console.warn('access_token tidak ditemukan di response Login.');",
+									"    }",
+									"",
+									"    if (refreshToken) {",
+									"        pm.collectionVariables.set('refresh_token', refreshToken);",
+									"    }",
+									"} else {",
+									"    console.warn('Login gagal, status: ' + pm.response.code);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"name": "Login",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/auth/login"
+					},
+					"response": []
+				},
+				{
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Refresh token juga menghasilkan access_token baru -> update collection variable.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    const accessToken = jsonData.access_token || jsonData.data?.access_token;",
+									"    const refreshToken = jsonData.refresh_token || jsonData.data?.refresh_token;",
+									"",
+									"    if (accessToken) {",
+									"        pm.collectionVariables.set('access_token', accessToken);",
+									"        console.log('access_token diperbarui via refresh.');",
+									"    }",
+									"    if (refreshToken) {",
+									"        pm.collectionVariables.set('refresh_token', refreshToken);",
+									"    }",
+									"} else {",
+									"    console.warn('Refresh token gagal, kemungkinan refresh_token sudah revoked/expired.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"name": "Refresh Token",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/auth/refresh"
+					},
+					"response": []
+				},
+				{
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Setelah logout, access_token dianggap revoked di server.",
+									"// Hapus dari collection variable supaya request berikutnya otomatis unauthenticated.",
+									"if (pm.response.code === 200) {",
+									"    pm.collectionVariables.unset('access_token');",
+									"    pm.collectionVariables.unset('refresh_token');",
+									"    console.log('access_token & refresh_token dihapus (revoked).');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"name": "Logout",
+					"request": {
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/auth/logout"
+					},
+					"response": []
+				}
+			],
+			"name": "Auth"
+		},
+		{
+			"item": [
+				{
+					"name": "Upload Avatar",
+					"request": {
+						"body": {
+							"formdata": [
+								{
+									"key": "avatar",
+									"src": "",
+									"type": "file"
+								}
+							],
+							"mode": "formdata"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/users/me/avatar"
+					},
+					"response": []
+				},
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/users"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id"
+							],
+							"raw": "{{base_url}}/users/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"username\": \"testuser\", \n  \"name\": \"Test User Updated\",\n  \"email\": \"test@example.com\",\n  \"password\": \"password123\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id"
+							],
+							"raw": "{{base_url}}/users/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id"
+							],
+							"raw": "{{base_url}}/users/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Lock",
+					"request": {
+						"header": [],
+						"method": "PATCH",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id",
+								"lock"
+							],
+							"raw": "{{base_url}}/users/:id/lock",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unlock",
+					"request": {
+						"header": [],
+						"method": "PATCH",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id",
+								"unlock"
+							],
+							"raw": "{{base_url}}/users/:id/unlock",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								"destroy"
+							],
+							"raw": "{{base_url}}/users/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Users"
+		},
+		{
+			"item": [
+				{
+					"name": "Upload",
+					"request": {
+						"body": {
+							"formdata": [
+								{
+									"key": "file",
+									"src": "",
+									"type": "file"
+								}
+							],
+							"mode": "formdata"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/files/upload"
+					},
+					"response": []
+				}
+			],
+			"name": "Files"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/roles"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								":id"
+							],
+							"raw": "{{base_url}}/roles/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"admin\",\n  \"description\": \"Administrator\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/roles"
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"admin-updated\",\n  \"description\": \"Administrator\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								":id"
+							],
+							"raw": "{{base_url}}/roles/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								":id"
+							],
+							"raw": "{{base_url}}/roles/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Role To User",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"role_id\": \"uuid-here\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id",
+								"roles"
+							],
+							"raw": "{{base_url}}/users/:id/roles",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Role From User",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"users",
+								":id",
+								"roles",
+								":role_id"
+							],
+							"raw": "{{base_url}}/users/:id/roles/:role_id",
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "role_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								"destroy"
+							],
+							"raw": "{{base_url}}/roles/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Roles"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"permissions",
+								":id"
+							],
+							"raw": "{{base_url}}/permissions/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/permissions"
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"users.read\",\n  \"description\": \"Read Users\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"permissions",
+								":id"
+							],
+							"raw": "{{base_url}}/permissions/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"permissions",
+								":id"
+							],
+							"raw": "{{base_url}}/permissions/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Permission To Role",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"permission_id\": \"uuid-here\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								":id",
+								"permissions"
+							],
+							"raw": "{{base_url}}/roles/:id/permissions",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Revoke Permission From Role",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"roles",
+								":id",
+								"permissions",
+								":permission_id"
+							],
+							"raw": "{{base_url}}/roles/:id/permissions/:permission_id",
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "permission_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"permissions",
+								"destroy"
+							],
+							"raw": "{{base_url}}/permissions/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Permissions"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/companies"
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/companies"
+					},
+					"response": []
+				},
+				{
+					"name": "FindMyCompanies",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/companies/mine"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"raw": "{{base_url}}/companies/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Cipta Kriya Digital\",\n  \"legal_name\": \"PT. Cipta Kriya Digital\",\n  \"tax_id\": \"12-3456789\",\n  \"address\": \"Yogyakarta, Indonesia\",\n  \"phone\": \"08123456789\",\n  \"email\": \"hi@ckd.com\",\n  \"industry\": \"Software Manufacture\",\n  \"currency\": \"IDR\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"raw": "{{base_url}}/companies/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id"
+							],
+							"raw": "{{base_url}}/companies/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Find Members By Company",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"raw": "{{base_url}}/companies/:id/members",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Assign Member",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"user_id\": \"uuid-here\",\n  \"role\": \"member\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members"
+							],
+							"raw": "{{base_url}}/companies/:id/members",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update Member Role",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"role\": \"admin\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id",
+								"role"
+							],
+							"raw": "{{base_url}}/companies/:id/members/:user_id/role",
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Remove Member",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"members",
+								":user_id"
+							],
+							"raw": "{{base_url}}/companies/:id/members/:user_id",
+							"variable": [
+								{
+									"key": "id"
+								},
+								{
+									"key": "user_id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Otomatis simpan company_id ke collection variable setelah select company.",
+									"// Berguna untuk referensi manual jika dibutuhkan.",
+									"if (pm.response.code === 200) {",
+									"    const jsonData = pm.response.json();",
+									"    const companyId = jsonData.data?.id;",
+									"    if (companyId) {",
+									"        pm.collectionVariables.set('company_id', companyId);",
+									"        console.log('company_id tersimpan: ' + companyId);",
+									"    }",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"name": "Select Company",
+					"request": {
+						"description": "Set the active company for the current session. Call this again with a different ID to switch company. No request body required.",
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								":id",
+								"select"
+							],
+							"raw": "{{base_url}}/companies/:id/select",
+							"variable": [
+								{
+									"description": "UUID of the company to select as active",
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Company",
+					"request": {
+						"description": "Returns the company currently active in this session. Returns 404 if no company has been selected yet.",
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/companies/active"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"companies",
+								"destroy"
+							],
+							"raw": "{{base_url}}/companies/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Companies"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/coa-groups"
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Assets\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/coa-groups"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-groups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-groups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Assets Updated\",\n  \"code\": \"1\",\n  \"type\": \"asset\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-groups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-groups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-groups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-groups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Select Dropdown List",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/coa-groups/select"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-groups",
+								"destroy"
+							],
+							"raw": "{{base_url}}/coa-groups/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "COA Groups"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/coa-subgroups"
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Current Assets\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/coa-subgroups"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-subgroups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-subgroups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Current Assets Updated\",\n  \"code\": \"11\",\n  \"group_id\": \"uuid-here\"\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-subgroups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-subgroups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-subgroups",
+								":id"
+							],
+							"raw": "{{base_url}}/coa-subgroups/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Select Dropdown List",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/coa-subgroups/select"
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa-subgroups",
+								"destroy"
+							],
+							"raw": "{{base_url}}/coa-subgroups/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "COA Subgroups"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/coa"
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Cash\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/coa"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa",
+								":id"
+							],
+							"raw": "{{base_url}}/coa/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Cash Updated\",\n  \"code\": \"1101\",\n  \"subgroup_id\": \"uuid-here\",\n  \"is_contra\": false\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa",
+								":id"
+							],
+							"raw": "{{base_url}}/coa/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa",
+								":id"
+							],
+							"raw": "{{base_url}}/coa/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"coa",
+								"destroy"
+							],
+							"raw": "{{base_url}}/coa/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "COA"
+		},
+		{
+			"item": [
+				{
+					"name": "Get Configuration",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/company-configuration"
+					},
+					"response": []
+				},
+				{
+					"name": "Upsert Configuration",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"enable_tax\": true,\n  \"tax_rate\": 0.11,\n  \"invoice_prefix\": \"INV\",\n  \"quotation_prefix\": \"QUO\",\n  \"invoice_due_days\": 30\n}"
+						},
+						"header": [],
+						"method": "PUT",
+						"url": "{{base_url}}/company-configuration"
+					},
+					"response": []
+				}
+			],
+			"name": "Company Configuration"
+		},
+		{
+			"item": [
+				{
+					"name": "FindAll",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": "{{base_url}}/fiscal-years"
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								":id"
+							],
+							"raw": "{{base_url}}/fiscal-years/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"name\": \"Fiscal Year 2026\",\n  \"start_date\": \"2026-01-01\",\n  \"end_date\": \"2026-12-31\",\n  \"period_type\": \"monthly\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/fiscal-years"
+					},
+					"response": []
+				},
+				{
+					"name": "Activate",
+					"request": {
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								":id",
+								"activate"
+							],
+							"raw": "{{base_url}}/fiscal-years/:id/activate",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Close Period",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"reason\": \"End of month closing\"\n}"
+						},
+						"header": [],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"fiscal-years",
+								"periods",
+								":period_id",
+								"close"
+							],
+							"raw": "{{base_url}}/fiscal-years/periods/:period_id/close",
+							"variable": [
+								{
+									"key": "period_id"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Fiscal Years"
+		},
+		{
+			"item": [
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 5000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 5000000\n    }\n  ]\n}"
+						},
+						"description": "Create a new journal entry in draft status. Lines must be balanced (total debit = total credit) and have at least 2 items.",
+						"header": [],
+						"method": "POST",
+						"url": "{{base_url}}/journal_entries"
+					},
+					"response": []
+				},
+				{
+					"name": "FindAll",
+					"request": {
+						"description": "List all journal entries with pagination, search, and status filter.",
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "page_size",
+									"value": "10"
+								},
+								{
+									"disabled": true,
+									"key": "search",
+									"value": ""
+								},
+								{
+									"disabled": true,
+									"key": "status",
+									"value": "draft"
+								}
+							],
+							"raw": "{{base_url}}/journal_entries?page=1&page_size=10"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "FindById",
+					"request": {
+						"description": "Get a single journal entry with its lines and COA details.",
+						"header": [],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"raw": "{{base_url}}/journal_entries/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{\n  \"date\": \"2026-07-18T00:00:00Z\",\n  \"description\": \"Pembayaran sewa kantor bulan Juli (revisi)\",\n  \"lines\": [\n    {\n      \"coa_id\": \"uuid-beban-sewa\",\n      \"description\": \"Beban Sewa Kantor\",\n      \"debit\": 6000000,\n      \"credit\": 0\n    },\n    {\n      \"coa_id\": \"uuid-kas\",\n      \"description\": \"Kas Keluar\",\n      \"debit\": 0,\n      \"credit\": 6000000\n    }\n  ]\n}"
+						},
+						"description": "Update a draft journal entry. Only draft entries can be edited.",
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"raw": "{{base_url}}/journal_entries/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"description": "Delete a draft journal entry. Only draft entries can be deleted.",
+						"header": [],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id"
+							],
+							"raw": "{{base_url}}/journal_entries/:id",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Post",
+					"request": {
+						"description": "Post a draft journal entry. The entry date must fall within an open fiscal period. Changes status from draft to posted.",
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id",
+								"post"
+							],
+							"raw": "{{base_url}}/journal_entries/:id/post",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Void",
+					"request": {
+						"description": "Void a posted journal entry. Changes status from posted to void.",
+						"header": [],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								":id",
+								"void"
+							],
+							"raw": "{{base_url}}/journal_entries/:id/void",
+							"variable": [
+								{
+									"key": "id"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Delete",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"ids\": [\n        \"00000000-0000-0000-0000-000000000000\"\n    ]\n}"
+						},
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{access_token}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"journal_entries",
+								"destroy"
+							],
+							"raw": "{{base_url}}/journal_entries/destroy"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Journal Entries"
+		},
+		{
+			"item": [
+				{
+					"name": "General Ledger",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"general-ledger"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								},
+								{
+									"key": "coa_id",
+									"value": "{{coa_id}}"
+								}
+							],
+							"raw": "{{base_url}}/reports/general-ledger?date_from=2025-01-01&date_to=2025-12-31&coa_id={{coa_id}}"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Trial Balance",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"trial-balance"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								}
+							],
+							"raw": "{{base_url}}/reports/trial-balance?date_from=2025-01-01&date_to=2025-12-31"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Profit & Loss",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"profit-loss"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								}
+							],
+							"raw": "{{base_url}}/reports/profit-loss?date_from=2025-01-01&date_to=2025-12-31"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Balance Sheet",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"balance-sheet"
+							],
+							"query": [
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								}
+							],
+							"raw": "{{base_url}}/reports/balance-sheet?date_to=2025-12-31"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Cash Flow",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"cash-flow"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								}
+							],
+							"raw": "{{base_url}}/reports/cash-flow?date_from=2025-01-01&date_to=2025-12-31"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Equity Statement",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"equity-statement"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								}
+							],
+							"raw": "{{base_url}}/reports/equity-statement?date_from=2025-01-01&date_to=2025-12-31"
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Journal Book",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{token}}"
+							},
+							{
+								"key": "X-Company-ID",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"reports",
+								"journal-book"
+							],
+							"query": [
+								{
+									"key": "date_from",
+									"value": "2025-01-01"
+								},
+								{
+									"key": "date_to",
+									"value": "2025-12-31"
+								},
+								{
+									"key": "type",
+									"value": "general"
+								}
+							],
+							"raw": "{{base_url}}/reports/journal-book?date_from=2025-01-01&date_to=2025-12-31&type=general"
+						}
+					},
+					"response": []
+				}
+			],
+			"name": "Reports"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors"
+							],
+							"raw": "{{base_url}}/api/v1/vendors"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"vendors"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/vendors"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors"
+							],
+							"raw": "{{base_url}}/api/v1/vendors"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/vendors/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/vendors/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/vendors/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"vendors",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/vendors/:id"
+						}
+					}
+				}
+			],
+			"name": "Vendors"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers"
+							],
+							"raw": "{{base_url}}/api/v1/customers"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"customers"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/customers"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers"
+							],
+							"raw": "{{base_url}}/api/v1/customers"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/customers/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/customers/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/customers/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"customers",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/customers/:id"
+						}
+					}
+				}
+			],
+			"name": "Customers"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"purchase-orders"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/purchase-orders"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders/:id"
+						}
+					}
+				},
+				{
+					"name": "Approve",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"purchase-orders",
+								":id",
+								"approve"
+							],
+							"raw": "{{base_url}}/api/v1/purchase-orders/:id/approve"
+						}
+					}
+				}
+			],
+			"name": "Purchase Orders"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills"
+							],
+							"raw": "{{base_url}}/api/v1/bills"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"bills"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/bills"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills"
+							],
+							"raw": "{{base_url}}/api/v1/bills"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/bills/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/bills/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/bills/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/bills/:id"
+						}
+					}
+				},
+				{
+					"name": "Confirm",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								":id",
+								"confirm"
+							],
+							"raw": "{{base_url}}/api/v1/bills/:id/confirm"
+						}
+					}
+				},
+				{
+					"name": "Pay",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"bills",
+								":id",
+								"pay"
+							],
+							"raw": "{{base_url}}/api/v1/bills/:id/pay"
+						}
+					}
+				}
+			],
+			"name": "Bills"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations"
+							],
+							"raw": "{{base_url}}/api/v1/quotations"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"quotations"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/quotations"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations"
+							],
+							"raw": "{{base_url}}/api/v1/quotations"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/quotations/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/quotations/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/quotations/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/quotations/:id"
+						}
+					}
+				},
+				{
+					"name": "Approve",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"quotations",
+								":id",
+								"approve"
+							],
+							"raw": "{{base_url}}/api/v1/quotations/:id/approve"
+						}
+					}
+				}
+			],
+			"name": "Quotations"
+		},
+		{
+			"item": [
+				{
+					"name": "Find All",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							],
+							"raw": "{{base_url}}/api/v1/invoices"
+						}
+					}
+				},
+				{
+					"name": "Select Dropdown",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"dropdown",
+								"invoices"
+							],
+							"raw": "{{base_url}}/api/v1/dropdown/invoices"
+						}
+					}
+				},
+				{
+					"name": "Create",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices"
+							],
+							"raw": "{{base_url}}/api/v1/invoices"
+						}
+					}
+				},
+				{
+					"name": "Find By ID",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "GET",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/:id"
+						}
+					}
+				},
+				{
+					"name": "Update",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/:id"
+						}
+					}
+				},
+				{
+					"name": "Destroy (Bulk)",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								"destroy"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/destroy"
+						}
+					}
+				},
+				{
+					"name": "Delete",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "DELETE",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								":id"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/:id"
+						}
+					}
+				},
+				{
+					"name": "Confirm",
+					"request": {
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "PUT",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								":id",
+								"confirm"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/:id/confirm"
+						}
+					}
+				},
+				{
+					"name": "Pay",
+					"request": {
+						"body": {
+							"mode": "raw",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							},
+							"raw": "{}"
+						},
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{access_token}}"
+							},
+							{
+								"key": "x-company-id",
+								"type": "text",
+								"value": "{{company_id}}"
+							}
+						],
+						"method": "POST",
+						"url": {
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"invoices",
+								":id",
+								"pay"
+							],
+							"raw": "{{base_url}}/api/v1/invoices/:id/pay"
+						}
+					}
+				}
+			],
+			"name": "Invoices"
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000/api/v1"
+		},
+		{
+			"key": "access_token",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
+			"value": ""
+		},
+		{
+			"key": "company_id",
+			"value": ""
+		}
+	]
 }

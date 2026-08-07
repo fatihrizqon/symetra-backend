@@ -19,6 +19,6 @@ func (h *Hook) Fire(entry *logrus.Entry) error {
 		Fields:  entry.Data,
 	}
 
-	go h.Notifier.Send(msg)
+	go func() { _ = h.Notifier.Send(msg) }()
 	return nil
 }

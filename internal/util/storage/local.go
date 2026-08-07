@@ -21,7 +21,7 @@ type LocalStorage struct {
 
 // NewLocalStorage membuat instance LocalStorage dan memastikan BaseDir ada.
 func NewLocalStorage(baseDir string, baseURL string) *LocalStorage {
-	os.MkdirAll(baseDir, os.ModePerm)
+	_ = os.MkdirAll(baseDir, os.ModePerm)
 	return &LocalStorage{
 		BaseDir: baseDir,
 		BaseURL: strings.TrimRight(baseURL, "/"),
@@ -43,13 +43,13 @@ func (s *LocalStorage) Save(_ context.Context, file *multipart.FileHeader, desti
 	if err != nil {
 		return "", fmt.Errorf("failed to open uploaded file: %w", err)
 	}
-	defer src.Close()
+	defer func() { _ = src.Close() }()
 
 	dst, err := os.Create(fullPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create destination file: %w", err)
 	}
-	defer dst.Close()
+	defer func() { _ = dst.Close() }()
 
 	if _, err := io.Copy(dst, src); err != nil {
 		return "", fmt.Errorf("failed to save file: %w", err)

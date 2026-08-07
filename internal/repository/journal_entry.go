@@ -49,7 +49,7 @@ func (r *JournalEntryRepository) GenerateJournalNumber(companyId uuid.UUID, date
 		return "", err
 	} else {
 		// parse sequence from lastJournal.JournalNumber e.g. JE-202501-0001
-		fmt.Sscanf(lastJournal.JournalNumber, prefix+"%04d", &sequence)
+		_, _ = fmt.Sscanf(lastJournal.JournalNumber, prefix+"%04d", &sequence)
 		sequence++
 	}
 

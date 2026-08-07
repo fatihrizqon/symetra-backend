@@ -28,6 +28,13 @@ func seedAdminUser(db *gorm.DB) {
 		pFiscalYearRead, pFiscalYearManage       entity.Permission
 		pTransactionsRead, pTransactionsManage   entity.Permission
 		pReportsRead                             entity.Permission
+		
+		pPurchaseOrderRead, pPurchaseOrderManage entity.Permission
+		pBillRead, pBillManage                   entity.Permission
+		pQuotationRead, pQuotationManage         entity.Permission
+		pInvoiceRead, pInvoiceManage             entity.Permission
+		pCustomerRead, pCustomerManage           entity.Permission
+		pVendorRead, pVendorManage               entity.Permission
 	)
 
 	if err := db.Where("name = ?", "users.read").First(&pUserRead).Error; err != nil {
@@ -120,6 +127,58 @@ func seedAdminUser(db *gorm.DB) {
 		db.Create(&pReportsRead)
 	}
 
+	// Procurement Permissions
+	if err := db.Where("name = ?", "purchase_orders.read").First(&pPurchaseOrderRead).Error; err != nil {
+		pPurchaseOrderRead = entity.Permission{Name: "purchase_orders.read", Description: "Read purchase orders"}
+		db.Create(&pPurchaseOrderRead)
+	}
+	if err := db.Where("name = ?", "purchase_orders.manage").First(&pPurchaseOrderManage).Error; err != nil {
+		pPurchaseOrderManage = entity.Permission{Name: "purchase_orders.manage", Description: "Manage purchase orders"}
+		db.Create(&pPurchaseOrderManage)
+	}
+	if err := db.Where("name = ?", "bills.read").First(&pBillRead).Error; err != nil {
+		pBillRead = entity.Permission{Name: "bills.read", Description: "Read bills"}
+		db.Create(&pBillRead)
+	}
+	if err := db.Where("name = ?", "bills.manage").First(&pBillManage).Error; err != nil {
+		pBillManage = entity.Permission{Name: "bills.manage", Description: "Manage bills"}
+		db.Create(&pBillManage)
+	}
+	if err := db.Where("name = ?", "vendors.read").First(&pVendorRead).Error; err != nil {
+		pVendorRead = entity.Permission{Name: "vendors.read", Description: "Read vendors"}
+		db.Create(&pVendorRead)
+	}
+	if err := db.Where("name = ?", "vendors.manage").First(&pVendorManage).Error; err != nil {
+		pVendorManage = entity.Permission{Name: "vendors.manage", Description: "Manage vendors"}
+		db.Create(&pVendorManage)
+	}
+
+	// Sales Permissions
+	if err := db.Where("name = ?", "quotations.read").First(&pQuotationRead).Error; err != nil {
+		pQuotationRead = entity.Permission{Name: "quotations.read", Description: "Read quotations"}
+		db.Create(&pQuotationRead)
+	}
+	if err := db.Where("name = ?", "quotations.manage").First(&pQuotationManage).Error; err != nil {
+		pQuotationManage = entity.Permission{Name: "quotations.manage", Description: "Manage quotations"}
+		db.Create(&pQuotationManage)
+	}
+	if err := db.Where("name = ?", "invoices.read").First(&pInvoiceRead).Error; err != nil {
+		pInvoiceRead = entity.Permission{Name: "invoices.read", Description: "Read invoices"}
+		db.Create(&pInvoiceRead)
+	}
+	if err := db.Where("name = ?", "invoices.manage").First(&pInvoiceManage).Error; err != nil {
+		pInvoiceManage = entity.Permission{Name: "invoices.manage", Description: "Manage invoices"}
+		db.Create(&pInvoiceManage)
+	}
+	if err := db.Where("name = ?", "customers.read").First(&pCustomerRead).Error; err != nil {
+		pCustomerRead = entity.Permission{Name: "customers.read", Description: "Read customers"}
+		db.Create(&pCustomerRead)
+	}
+	if err := db.Where("name = ?", "customers.manage").First(&pCustomerManage).Error; err != nil {
+		pCustomerManage = entity.Permission{Name: "customers.manage", Description: "Manage customers"}
+		db.Create(&pCustomerManage)
+	}
+
 	// 2. Seed Role
 	var roleAdmin entity.Role
 	if err := db.Where("name = ?", "admin").First(&roleAdmin).Error; err != nil {
@@ -136,11 +195,26 @@ func seedAdminUser(db *gorm.DB) {
 				pFiscalYearRead, pFiscalYearManage,
 				pTransactionsRead, pTransactionsManage,
 				pReportsRead,
+				pPurchaseOrderRead, pPurchaseOrderManage,
+				pBillRead, pBillManage,
+				pQuotationRead, pQuotationManage,
+				pInvoiceRead, pInvoiceManage,
+				pCustomerRead, pCustomerManage,
+				pVendorRead, pVendorManage,
 			},
 		}
 		db.Create(&roleAdmin)
 	} else {
-		db.Model(&roleAdmin).Association("Permissions").Append(&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, &pFiscalYearRead, &pFiscalYearManage, &pTransactionsRead, &pTransactionsManage, &pReportsRead)
+		_ = db.Model(&roleAdmin).Association("Permissions").Append(
+			&pRbacManage, &pCompanyConfigRead, &pCompanyConfigManage, 
+			&pFiscalYearRead, &pFiscalYearManage, &pTransactionsRead, &pTransactionsManage, &pReportsRead,
+			&pPurchaseOrderRead, &pPurchaseOrderManage,
+			&pBillRead, &pBillManage,
+			&pQuotationRead, &pQuotationManage,
+			&pInvoiceRead, &pInvoiceManage,
+			&pCustomerRead, &pCustomerManage,
+			&pVendorRead, &pVendorManage,
+		)
 	}
 
 	var user entity.User
@@ -154,7 +228,7 @@ func seedAdminUser(db *gorm.DB) {
 		})
 		log.Println("[SEED] Admin user created: admin@example.com / password")
 	} else {
-		db.Model(&user).Association("Roles").Append(&roleAdmin)
+		_ = db.Model(&user).Association("Roles").Append(&roleAdmin)
 	}
 	if db.Where("email = ?", "operator@example.com").First(&user).Error != nil {
 		hash, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)

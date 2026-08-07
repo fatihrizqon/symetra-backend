@@ -6,7 +6,7 @@ import (
 )
 
 func Migrate(db *gorm.DB) {
-	db.AutoMigrate(
+	_ = db.AutoMigrate(
 		// ── Auth & Users ──────────────────────────────────────────────────────
 		&entity.User{},
 		&entity.Session{},
@@ -28,6 +28,20 @@ func Migrate(db *gorm.DB) {
 		&entity.FiscalPeriodLog{},
 		&entity.JournalEntry{},
 		&entity.JournalLine{},
+		// ── Procurement ───────────────────────────────────────────────────────
+		&entity.Vendor{},
+		&entity.PurchaseOrder{},
+		&entity.PurchaseOrderItem{},
+		&entity.Bill{},
+		&entity.BillItem{},
+		&entity.BillPayment{},
+		// ── Sales ─────────────────────────────────────────────────────────────
+		&entity.Customer{},
+		&entity.Quotation{},
+		&entity.QuotationItem{},
+		&entity.Invoice{},
+		&entity.InvoiceItem{},
+		&entity.InvoicePayment{},
 	)
 
 	// Performance indexes

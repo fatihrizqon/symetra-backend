@@ -65,6 +65,12 @@ func Bootstrap(deps *BootstrapConfig) {
 	fiscalYearRepository := repository.NewFiscalYearRepository(deps.DB)
 	journalEntryRepository := repository.NewJournalEntryRepository(deps.DB)
 	reportRepository := repository.NewReportRepository(deps.DB)
+	vendorRepository := repository.NewVendorRepository(deps.DB)
+	customerRepository := repository.NewCustomerRepository(deps.DB)
+	purchaseOrderRepository := repository.NewPurchaseOrderRepository(deps.DB)
+	billRepository := repository.NewBillRepository(deps.DB)
+	quotationRepository := repository.NewQuotationRepository(deps.DB)
+	invoiceRepository := repository.NewInvoiceRepository(deps.DB)
 
 	// ── Services ──────────────────────────────────────────────────────────────
 	emailService := service.NewEmailService(deps.Log)
@@ -80,6 +86,12 @@ func Bootstrap(deps *BootstrapConfig) {
 	fiscalYearService := service.NewFiscalYearService(fiscalYearRepository, deps.Validate)
 	journalEntryService := service.NewJournalEntryService(journalEntryRepository, coaRepository, fiscalYearRepository)
 	reportService := service.NewReportService(reportRepository, companyConfigurationRepository)
+	vendorService := service.NewVendorService(vendorRepository)
+	customerService := service.NewCustomerService(customerRepository)
+	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderRepository, vendorRepository)
+	billService := service.NewBillService(billRepository, vendorRepository, companyConfigurationRepository, journalEntryService)
+	quotationService := service.NewQuotationService(quotationRepository, customerRepository)
+	invoiceService := service.NewInvoiceService(invoiceRepository, customerRepository, companyConfigurationRepository, journalEntryService)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────
 	fileHandler := handler.NewFileHandler(fileService)
@@ -94,6 +106,12 @@ func Bootstrap(deps *BootstrapConfig) {
 	fiscalYearHandler := handler.NewFiscalYearHandler(fiscalYearService)
 	journalEntryHandler := handler.NewJournalEntryHandler(journalEntryService)
 	reportHandler := handler.NewReportHandler(reportService)
+	vendorHandler := handler.NewVendorHandler(vendorService)
+	customerHandler := handler.NewCustomerHandler(customerService)
+	purchaseOrderHandler := handler.NewPurchaseOrderHandler(purchaseOrderService)
+	billHandler := handler.NewBillHandler(billService)
+	quotationHandler := handler.NewQuotationHandler(quotationService)
+	invoiceHandler := handler.NewInvoiceHandler(invoiceService)
 
 	// ── Middleware ────────────────────────────────────────────────────────────
 	authMiddleware := middleware.NewAuth(tokenRepository)
@@ -129,6 +147,12 @@ func Bootstrap(deps *BootstrapConfig) {
 		FiscalYearHandler:           fiscalYearHandler,
 		JournalEntryHandler:         journalEntryHandler,
 		ReportHandler:               reportHandler,
+		VendorHandler:               vendorHandler,
+		CustomerHandler:             customerHandler,
+		PurchaseOrderHandler:        purchaseOrderHandler,
+		BillHandler:                 billHandler,
+		QuotationHandler:            quotationHandler,
+		InvoiceHandler:              invoiceHandler,
 	}
 
 	routeConfig.Setup()

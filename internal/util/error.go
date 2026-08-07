@@ -13,7 +13,7 @@ func PanicIfError(err error) {
 
 func HandleError(ctx fiber.Ctx, status int, err error) {
 	if err != nil {
-		ctx.Status(status).JSON(response.JSON{
+		_ = ctx.Status(status).JSON(response.JSON{
 			Status:  status,
 			Message: err.Error(),
 		})
