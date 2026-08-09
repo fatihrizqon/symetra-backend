@@ -77,13 +77,13 @@ type ReportJournalBookRow struct {
 }
 
 type IReportRepository interface {
-	GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) ([]ReportGeneralLedgerRow, error)
-	GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportTrialBalanceRow, error)
-	GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportProfitLossRow, error)
-	GetBalanceSheet(companyId uuid.UUID, dateTo string) ([]ReportBalanceSheetRow, error)
-	GetCashFlow(companyId uuid.UUID, cashCoaIds []uuid.UUID, dateFrom, dateTo string) ([]ReportCashFlowRow, error)
-	GetEquityStatement(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportEquityRow, error)
-	GetJournalBook(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportJournalBookRow, error)
+	GetGeneralLedger(companyID uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) ([]ReportGeneralLedgerRow, error)
+	GetTrialBalance(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportTrialBalanceRow, error)
+	GetProfitLoss(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportProfitLossRow, error)
+	GetBalanceSheet(companyID uuid.UUID, dateTo string) ([]ReportBalanceSheetRow, error)
+	GetCashFlow(companyID uuid.UUID, cashCoaIds []uuid.UUID, dateFrom, dateTo string) ([]ReportCashFlowRow, error)
+	GetEquityStatement(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportEquityRow, error)
+	GetJournalBook(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportJournalBookRow, error)
 }
 
 type ReportRepository struct {
@@ -94,7 +94,7 @@ func NewReportRepository(db *gorm.DB) IReportRepository {
 	return &ReportRepository{db: db}
 }
 
-func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) ([]ReportGeneralLedgerRow, error) {
+func (r *ReportRepository) GetGeneralLedger(companyID uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) ([]ReportGeneralLedgerRow, error) {
 	var rows []ReportGeneralLedgerRow
 	query := `
 		SELECT
@@ -115,11 +115,11 @@ func (r *ReportRepository) GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID
 		  AND je.date BETWEEN ? AND ?
 		ORDER BY je.date ASC, je.created_at ASC
 	`
-	err := r.db.Raw(query, companyId, coaId, dateFrom, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, coaId, dateFrom, dateTo).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportTrialBalanceRow, error) {
+func (r *ReportRepository) GetTrialBalance(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportTrialBalanceRow, error) {
 	var rows []ReportTrialBalanceRow
 	query := `
 		SELECT
@@ -140,11 +140,11 @@ func (r *ReportRepository) GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo
 		GROUP BY cg.type, c.code, c.name
 		ORDER BY c.code ASC
 	`
-	err := r.db.Raw(query, companyId, dateFrom, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, dateFrom, dateTo).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportProfitLossRow, error) {
+func (r *ReportRepository) GetProfitLoss(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportProfitLossRow, error) {
 	var rows []ReportProfitLossRow
 	query := `
 		SELECT
@@ -165,11 +165,11 @@ func (r *ReportRepository) GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo s
 		  AND je.date BETWEEN ? AND ?
 		GROUP BY cg.type, cg.name, cs.name, c.code, c.name
 	`
-	err := r.db.Raw(query, companyId, dateFrom, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, dateFrom, dateTo).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetBalanceSheet(companyId uuid.UUID, dateTo string) ([]ReportBalanceSheetRow, error) {
+func (r *ReportRepository) GetBalanceSheet(companyID uuid.UUID, dateTo string) ([]ReportBalanceSheetRow, error) {
 	var rows []ReportBalanceSheetRow
 	query := `
 		SELECT
@@ -210,12 +210,11 @@ func (r *ReportRepository) GetBalanceSheet(companyId uuid.UUID, dateTo string) (
 		  AND je.date <= ?
 		HAVING SUM(jl.debit) - SUM(jl.credit) != 0
 	`
-	err := r.db.Raw(query, companyId, dateTo, companyId, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, dateTo, companyID, dateTo).Scan(&rows).Error
 	return rows, err
 }
 
-
-func (r *ReportRepository) GetCashFlow(companyId uuid.UUID, cashCoaIds []uuid.UUID, dateFrom, dateTo string) ([]ReportCashFlowRow, error) {
+func (r *ReportRepository) GetCashFlow(companyID uuid.UUID, cashCoaIds []uuid.UUID, dateFrom, dateTo string) ([]ReportCashFlowRow, error) {
 	var rows []ReportCashFlowRow
 	if len(cashCoaIds) == 0 {
 		return rows, nil
@@ -235,17 +234,17 @@ func (r *ReportRepository) GetCashFlow(companyId uuid.UUID, cashCoaIds []uuid.UU
 		  AND je.date BETWEEN ? AND ?
 		ORDER BY je.date ASC
 	`
-	err := r.db.Raw(query, companyId, cashCoaIds, dateFrom, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, cashCoaIds, dateFrom, dateTo).Scan(&rows).Error
 	return rows, err
 }
 
-func (r *ReportRepository) GetEquityStatement(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportEquityRow, error) {
+func (r *ReportRepository) GetEquityStatement(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportEquityRow, error) {
 	// Not full logic yet, as equity needs more complex handling
 	var rows []ReportEquityRow
 	return rows, nil
 }
 
-func (r *ReportRepository) GetJournalBook(companyId uuid.UUID, dateFrom, dateTo string) ([]ReportJournalBookRow, error) {
+func (r *ReportRepository) GetJournalBook(companyID uuid.UUID, dateFrom, dateTo string) ([]ReportJournalBookRow, error) {
 	var rows []ReportJournalBookRow
 	query := `
 		SELECT
@@ -269,6 +268,6 @@ func (r *ReportRepository) GetJournalBook(companyId uuid.UUID, dateFrom, dateTo 
 		  AND je.date BETWEEN ? AND ?
 		ORDER BY je.date ASC, je.created_at ASC, jl.created_at ASC
 	`
-	err := r.db.Raw(query, companyId, dateFrom, dateTo).Scan(&rows).Error
+	err := r.db.Raw(query, companyID, dateFrom, dateTo).Scan(&rows).Error
 	return rows, err
 }

@@ -1,6 +1,13 @@
 package entity
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+func (Role) TableName() string {
+	return "roles"
+}
 
 type Role struct {
 	Id          uuid.UUID    `gorm:"type:uuid; primaryKey; default:gen_random_uuid();" json:"id"`
@@ -9,6 +16,10 @@ type Role struct {
 	Permissions []Permission `gorm:"many2many:role_permissions;" json:"permissions,omitempty"`
 }
 
-func (Role) TableName() string {
-	return "roles"
+func (Role) SearchableFields() []string {
+	return []string{"name", "description"}
+}
+
+func (Role) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
 }

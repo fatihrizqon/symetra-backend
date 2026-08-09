@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func (Customer) TableName() string { return "customers" }
 
 type Customer struct {
 	Id        uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
@@ -21,4 +24,14 @@ type Customer struct {
 	UpdatedAt time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
-func (Customer) TableName() string { return "customers" }
+func (Customer) SearchableFields() []string {
+	return []string{"code", "name", "email", "phone"}
+}
+
+func (Customer) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	if values, ok := filters["status"]; ok {
+		db = db.Where("status IN ?", values)
+	}
+
+	return db
+}

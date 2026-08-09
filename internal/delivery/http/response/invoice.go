@@ -46,19 +46,24 @@ type InvoiceResponse struct {
 	Items            []InvoiceItemResponse `json:"items,omitempty"`
 }
 
-// FromInvoiceEntity converts an entity.Invoice to an InvoiceResponse.
-func FromInvoiceEntity(inv entity.Invoice) InvoiceResponse {
+// NewInvoiceItemResponse converts an entity.InvoiceItem to an InvoiceItemResponse.
+func NewInvoiceItemResponse(item entity.InvoiceItem) InvoiceItemResponse {
+	return InvoiceItemResponse{
+		Id:            item.Id,
+		Description:   item.Description,
+		Qty:           item.Qty,
+		Price:         item.Price,
+		Discount:      item.Discount,
+		TaxApplicable: item.TaxApplicable,
+		Amount:        item.Amount,
+	}
+}
+
+// NewInvoiceResponse converts an entity.Invoice to an InvoiceResponse.
+func NewInvoiceResponse(inv entity.Invoice) InvoiceResponse {
 	var items []InvoiceItemResponse
 	for _, item := range inv.Items {
-		items = append(items, InvoiceItemResponse{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-		})
+		items = append(items, NewInvoiceItemResponse(item))
 	}
 
 	resp := InvoiceResponse{
@@ -90,30 +95,17 @@ func FromInvoiceEntity(inv entity.Invoice) InvoiceResponse {
 	}
 
 	if inv.Customer != nil {
-		custResp := CustomerResponse{
-			Id:        inv.Customer.Id,
-			CompanyId: inv.Customer.CompanyId,
-			Code:      inv.Customer.Code,
-			Name:      inv.Customer.Name,
-			Email:     inv.Customer.Email,
-			Phone:     inv.Customer.Phone,
-			Address:   inv.Customer.Address,
-			CoaId:     inv.Customer.CoaId,
-			Status:    inv.Customer.Status,
-			CreatedAt: inv.Customer.CreatedAt,
-			UpdatedAt: inv.Customer.UpdatedAt,
-		}
-		if inv.Customer.Coa != nil {
-			custResp.Coa = &COAResponse{
-				Id:            inv.Customer.Coa.Id,
-				Code:          inv.Customer.Coa.Code,
-				Name:          inv.Customer.Coa.Name,
-				IsContra:      inv.Customer.Coa.IsContra,
-				NormalBalance: inv.Customer.Coa.GetAbsoluteNormalBalance(),
-			}
-		}
+		custResp := NewCustomerResponse(*inv.Customer)
 		resp.Customer = &custResp
 	}
 
 	return resp
+}
+
+func NewInvoiceResponses(entities []entity.Invoice) []InvoiceResponse {
+	var responses = make([]InvoiceResponse, 0, len(entities))
+	for _, e := range entities {
+		responses = append(responses, NewInvoiceResponse(e))
+	}
+	return responses
 }

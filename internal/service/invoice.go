@@ -10,64 +10,46 @@ import (
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 type IInvoiceService interface {
-	Create(companyId, userId uuid.UUID, req request.InvoiceCreateRequest) (response.InvoiceResponse, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.InvoiceResponse, error)
-	Update(companyId, id uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Destroy(companyId uuid.UUID, ids []uuid.UUID) error
-	Confirm(companyId, id, userId uuid.UUID) error
-	RecordPayment(companyId, id, userId uuid.UUID, req request.InvoicePaymentRequest) error
+	Create(companyID uuid.UUID, userId uuid.UUID, req request.InvoiceCreateRequest) (entity.Invoice, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.Invoice, error)
+	Update(companyID uuid.UUID, req request.InvoiceUpdateRequest) (entity.Invoice, error)
+	Delete(companyID uuid.UUID, id uuid.UUID) error
+	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
+	Confirm(companyID uuid.UUID, id uuid.UUID, userId uuid.UUID) error
+	RecordPayment(companyID uuid.UUID, id uuid.UUID, userId uuid.UUID, req request.InvoicePaymentRequest) error
 }
 
 type InvoiceService struct {
-	repo           repository.IInvoiceRepository
-	customerRepo   repository.ICustomerRepository
-	configRepo     repository.ICompanyConfigurationRepository
-	journalService IJournalEntryService
+	validate                        *validator.Validate
+	IInvoiceRepository              repository.IInvoiceRepository
+	ICustomerRepository             repository.ICustomerRepository
+	ICompanyConfigurationRepository repository.ICompanyConfigurationRepository
+	IJournalEntryService            IJournalEntryService
 }
 
 func NewInvoiceService(
-	repo repository.IInvoiceRepository,
+	validate *validator.Validate,
+	invoiceRepo repository.IInvoiceRepository,
 	customerRepo repository.ICustomerRepository,
 	configRepo repository.ICompanyConfigurationRepository,
 	journalService IJournalEntryService,
 ) IInvoiceService {
-	return &InvoiceService{repo: repo, customerRepo: customerRepo, configRepo: configRepo, journalService: journalService}
-}
-
-func generateInvoiceNumber(companyId uuid.UUID, date time.Time) string {
-	return fmt.Sprintf("INV-%s-%d", date.Format("20060102"), time.Now().UnixMilli())
-}
-
-func (s *InvoiceService) calculateTotals(items []entity.InvoiceItem, taxRate float64) (subtotal, discountTotal, dpp, taxAmount, grandTotal float64) {
-	for i := range items {
-		item := &items[i]
-		item.Amount = (item.Qty * item.Price) - item.Discount
-		if item.Amount < 0 {
-			item.Amount = 0
-		}
-		subtotal += (item.Qty * item.Price)
-		discountTotal += item.Discount
-		if item.TaxApplicable {
-			dpp += item.Amount
-		}
+	return &InvoiceService{
+		validate:                        validate,
+		IInvoiceRepository:              invoiceRepo,
+		ICustomerRepository:             customerRepo,
+		ICompanyConfigurationRepository: configRepo,
+		IJournalEntryService:            journalService,
 	}
-	taxAmount = dpp * taxRate
-	grandTotal = (subtotal - discountTotal) + taxAmount
-	return
 }
 
-func (s *InvoiceService) Create(companyId, userId uuid.UUID, req request.InvoiceCreateRequest) (response.InvoiceResponse, error) {
-	_, err := s.customerRepo.FindById(companyId, req.CustomerId)
-	if err != nil {
-		return response.InvoiceResponse{}, errors.New("customer not found")
-	}
-
+func (s *InvoiceService) Create(companyID, userId uuid.UUID, req request.InvoiceCreateRequest) (entity.Invoice, error) {
 	var items []entity.InvoiceItem
 	for _, ir := range req.Items {
 		items = append(items, entity.InvoiceItem{
@@ -82,8 +64,8 @@ func (s *InvoiceService) Create(companyId, userId uuid.UUID, req request.Invoice
 	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(items, req.TaxRate)
 
 	invoice := entity.Invoice{
-		CompanyId:     companyId,
-		InvoiceNumber: generateInvoiceNumber(companyId, req.InvoiceDate),
+		CompanyId:     companyID,
+		InvoiceNumber: generateInvoiceNumber(req.InvoiceDate),
 		QuotationId:   req.QuotationId,
 		CustomerId:    req.CustomerId,
 		InvoiceDate:   req.InvoiceDate,
@@ -101,55 +83,55 @@ func (s *InvoiceService) Create(companyId, userId uuid.UUID, req request.Invoice
 		Items:         items,
 	}
 
-	if err := s.repo.Create(&invoice); err != nil {
-		return response.InvoiceResponse{}, err
+	if err := s.IInvoiceRepository.Create(&invoice); err != nil {
+		return entity.Invoice{}, err
 	}
-	createdInvoice, _ := s.repo.FindById(companyId, invoice.Id)
-	return response.FromInvoiceEntity(createdInvoice), nil
+	createdInvoice, _ := s.IInvoiceRepository.FindById(companyID, invoice.Id)
+	return createdInvoice, nil
 }
 
-func (s *InvoiceService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.InvoiceResponse, int, error) {
-	invoices, total, err := s.repo.FindAll(companyId, qp)
+func (s *InvoiceService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int, error) {
+	invoices, total, err := s.IInvoiceRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-		resps := make([]response.InvoiceResponse, 0, len(invoices))
+	results := make([]entity.Invoice, 0, len(invoices))
 	for _, i := range invoices {
 		resp := response.FromInvoiceEntity(i)
-		resps = append(resps, resp)
+		results = append(results, resp)
 	}
 
 	return resps, int(total), nil
 }
 
-func (s *InvoiceService) FindById(companyId, id uuid.UUID) (response.InvoiceResponse, error) {
-	invoice, err := s.repo.FindById(companyId, id)
+func (s *InvoiceService) FindById(companyID, id uuid.UUID) (entity.Invoice, error) {
+	invoice, err := s.IInvoiceRepository.FindById(companyID, id)
 	if err != nil {
-		return response.InvoiceResponse{}, errors.New("invoice not found")
+		return entity.Invoice{}, errors.New("invoice not found")
 	}
 	resp := response.FromInvoiceEntity(invoice)
 	return resp, nil
 }
 
-func (s *InvoiceService) Update(companyId, id uuid.UUID, req request.InvoiceUpdateRequest) (response.InvoiceResponse, error) {
-	invoice, err := s.repo.FindById(companyId, id)
+func (s *InvoiceService) Update(companyID uuid.UUID, req request.InvoiceUpdateRequest) (entity.Invoice, error) {
+	invoice, err := s.IInvoiceRepository.FindById(companyID, req.Id)
 	if err != nil {
-		return response.InvoiceResponse{}, errors.New("invoice not found")
+		return entity.Invoice{}, errors.New("invoice not found")
 	}
 
 	if invoice.InvoiceStatus != entity.InvoiceStatusDraft {
-		return response.InvoiceResponse{}, errors.New("only draft invoices can be updated")
+		return entity.Invoice{}, errors.New("only draft invoices can be updated")
 	}
 
-	_, err = s.customerRepo.FindById(companyId, req.CustomerId)
+	_, err = s.ICustomerRepository.FindById(companyID, req.CustomerId)
 	if err != nil {
-		return response.InvoiceResponse{}, errors.New("customer not found")
+		return entity.Invoice{}, errors.New("customer not found")
 	}
 
 	var items []entity.InvoiceItem
 	for _, ir := range req.Items {
 		items = append(items, entity.InvoiceItem{
-			InvoiceId:     id,
+			InvoiceId:     req.Id,
 			Description:   ir.Description,
 			Qty:           ir.Qty,
 			Price:         ir.Price,
@@ -173,33 +155,26 @@ func (s *InvoiceService) Update(companyId, id uuid.UUID, req request.InvoiceUpda
 	invoice.TaxAmount = taxAmount
 	invoice.GrandTotal = grandTotal
 
-	if err := s.repo.Update(&invoice); err != nil {
-		return response.InvoiceResponse{}, err
+	if err := s.IInvoiceRepository.Update(&invoice); err != nil {
+		return entity.Invoice{}, err
 	}
-	updatedInvoice, _ := s.repo.FindById(companyId, invoice.Id)
+	updatedInvoice, _ := s.IInvoiceRepository.FindById(companyID, invoice.Id)
 	return response.FromInvoiceEntity(updatedInvoice), nil
 }
 
-func (s *InvoiceService) Delete(companyId, id uuid.UUID) error {
-	invoice, err := s.repo.FindById(companyId, id)
-	if err != nil {
-		return errors.New("invoice not found")
-	}
-	if invoice.InvoiceStatus != entity.InvoiceStatusDraft {
-		return errors.New("only draft invoices can be deleted")
-	}
-	return s.repo.Delete(companyId, id)
+func (s *InvoiceService) Delete(companyID uuid.UUID, id uuid.UUID) error {
+	return s.IInvoiceRepository.Delete(companyID, id)
 }
 
-func (s *InvoiceService) Destroy(companyId uuid.UUID, ids []uuid.UUID) error {
+func (s *InvoiceService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
 	if len(ids) == 0 {
 		return errors.New("no ids provided")
 	}
-	return s.repo.BulkDestroy(companyId, ids)
+	return s.IInvoiceRepository.BulkDestroy(companyID, ids)
 }
 
-func (s *InvoiceService) Confirm(companyId, id, userId uuid.UUID) error {
-	invoice, err := s.repo.FindById(companyId, id)
+func (s *InvoiceService) Confirm(companyID, id, userId uuid.UUID) error {
+	invoice, err := s.IInvoiceRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("invoice not found")
 	}
@@ -207,7 +182,7 @@ func (s *InvoiceService) Confirm(companyId, id, userId uuid.UUID) error {
 		return errors.New("only draft invoices can be confirmed")
 	}
 
-	config, err := s.configRepo.GetByCompanyId(companyId)
+	config, err := s.ICompanyConfigurationRepository.GetByCompanyId(companyID)
 	if err != nil {
 		return errors.New("company configuration not found")
 	}
@@ -254,21 +229,21 @@ func (s *InvoiceService) Confirm(companyId, id, userId uuid.UUID) error {
 		Lines:       jeLines,
 	}
 
-	jeRes, err := s.journalService.Create(companyId, userId, jeReq)
+	jeRes, err := s.IJournalEntryService.Create(companyID, userId, jeReq)
 	if err != nil {
 		return fmt.Errorf("failed to generate journal entry: %v", err)
 	}
 
 	// Automatically post the journal entry
-	if err := s.journalService.Post(companyId, jeRes.Id); err != nil {
+	if err := s.IJournalEntryService.Post(companyID, jeRes.Id); err != nil {
 		return fmt.Errorf("failed to post journal entry: %v", err)
 	}
 
-	return s.repo.UpdateStatus(companyId, id, entity.InvoiceStatusConfirmed, &jeRes.Id)
+	return s.IInvoiceRepository.UpdateStatus(companyID, id, entity.InvoiceStatusConfirmed, &jeRes.Id)
 }
 
-func (s *InvoiceService) RecordPayment(companyId, id, userId uuid.UUID, req request.InvoicePaymentRequest) error {
-	invoice, err := s.repo.FindById(companyId, id)
+func (s *InvoiceService) RecordPayment(companyID, id, userId uuid.UUID, req request.InvoicePaymentRequest) error {
+	invoice, err := s.IInvoiceRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("invoice not found")
 	}
@@ -276,7 +251,7 @@ func (s *InvoiceService) RecordPayment(companyId, id, userId uuid.UUID, req requ
 		return errors.New("invoice must be confirmed before recording payment")
 	}
 
-	config, err := s.configRepo.GetByCompanyId(companyId)
+	config, err := s.ICompanyConfigurationRepository.GetByCompanyId(companyID)
 	if err != nil {
 		return errors.New("company configuration not found")
 	}
@@ -304,12 +279,12 @@ func (s *InvoiceService) RecordPayment(companyId, id, userId uuid.UUID, req requ
 		Lines:       jeLines,
 	}
 
-	jeRes, err := s.journalService.Create(companyId, userId, jeReq)
+	jeRes, err := s.IJournalEntryService.Create(companyID, userId, jeReq)
 	if err != nil {
 		return fmt.Errorf("failed to generate payment journal entry: %v", err)
 	}
 
-	if err := s.journalService.Post(companyId, jeRes.Id); err != nil {
+	if err := s.IJournalEntryService.Post(companyID, jeRes.Id); err != nil {
 		return fmt.Errorf("failed to post payment journal entry: %v", err)
 	}
 
@@ -323,7 +298,7 @@ func (s *InvoiceService) RecordPayment(companyId, id, userId uuid.UUID, req requ
 		CreatedBy:        userId,
 	}
 
-	if err := s.repo.AddPayment(&payment); err != nil {
+	if err := s.IInvoiceRepository.AddPayment(&payment); err != nil {
 		return err
 	}
 
@@ -333,5 +308,27 @@ func (s *InvoiceService) RecordPayment(companyId, id, userId uuid.UUID, req requ
 		pStatus = entity.PaymentStatusPaid
 	}
 
-	return s.repo.UpdatePaymentStatus(companyId, id, newAmountPaid, pStatus)
+	return s.IInvoiceRepository.UpdatePaymentStatus(companyID, id, newAmountPaid, pStatus)
+}
+
+func generateInvoiceNumber(date time.Time) string {
+	return fmt.Sprintf("INV-%s-%d", date.Format("20060102"), time.Now().UnixMilli())
+}
+
+func (s *InvoiceService) calculateTotals(items []entity.InvoiceItem, taxRate float64) (subtotal, discountTotal, dpp, taxAmount, grandTotal float64) {
+	for i := range items {
+		item := &items[i]
+		item.Amount = (item.Qty * item.Price) - item.Discount
+		if item.Amount < 0 {
+			item.Amount = 0
+		}
+		subtotal += (item.Qty * item.Price)
+		discountTotal += item.Discount
+		if item.TaxApplicable {
+			dpp += item.Amount
+		}
+	}
+	taxAmount = dpp * taxRate
+	grandTotal = (subtotal - discountTotal) + taxAmount
+	return
 }

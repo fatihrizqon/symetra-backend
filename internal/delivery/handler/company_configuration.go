@@ -9,11 +9,11 @@ import (
 )
 
 type CompanyConfigurationHandler struct {
-	Service service.ICompanyConfigurationService
+	ICompanyConfigurationService service.ICompanyConfigurationService
 }
 
 func NewCompanyConfigurationHandler(serv service.ICompanyConfigurationService) *CompanyConfigurationHandler {
-	return &CompanyConfigurationHandler{Service: serv}
+	return &CompanyConfigurationHandler{ICompanyConfigurationService: serv}
 }
 
 func (h *CompanyConfigurationHandler) Get(ctx fiber.Ctx) error {
@@ -23,7 +23,7 @@ func (h *CompanyConfigurationHandler) Get(ctx fiber.Ctx) error {
 		return nil
 	}
 
-	result, err := h.Service.GetByCompanyId(companyID)
+	result, err := h.ICompanyConfigurationService.GetByCompanyId(companyID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  fiber.StatusInternalServerError,
@@ -51,7 +51,7 @@ func (h *CompanyConfigurationHandler) Upsert(ctx fiber.Ctx) error {
 		return nil
 	}
 
-	result, err := h.Service.Upsert(companyID, req)
+	result, err := h.ICompanyConfigurationService.Upsert(companyID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
 			Status:  fiber.StatusBadRequest,

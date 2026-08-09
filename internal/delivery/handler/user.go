@@ -69,9 +69,9 @@ func (h *UserHandler) Create(ctx fiber.Ctx) error {
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/users [get]
 func (h *UserHandler) FindAll(ctx fiber.Ctx) error {
-	qp := util.ParseQueryParams(ctx, entity.User{}.SearchableFields())
-
-	entities, totalCount, err := h.IUserService.FindAll(qp)
+	var entity = entity.User{}
+	qp := util.ParseQueryParams(ctx, entity.SearchableFields())
+	results, totalCount, err := h.IUserService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  fiber.StatusInternalServerError,
@@ -79,23 +79,19 @@ func (h *UserHandler) FindAll(ctx fiber.Ctx) error {
 			Errors:  err.Error(),
 		})
 	}
-
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  fiber.StatusOK,
 			Message: "No records found.",
-			Data:    []response.UserResponse{},
-			Meta:    nil,
 		})
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
-
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  fiber.StatusOK,
 		Message: "Successfully retrieved all records.",
-		Data:    entities,
+		Data:    results,
 		Meta:    &meta,
 	})
 }
@@ -112,14 +108,13 @@ func (h *UserHandler) FindAll(ctx fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "User not found"
 // @Router /api/v1/users/{id} [get]
 func (h *UserHandler) FindById(ctx fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.IUserService.FindById(parsedId)
+	result, err := h.IUserService.FindById(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  fiber.StatusNotFound,
@@ -188,25 +183,23 @@ func (h *UserHandler) Update(ctx fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "User not found"
 // @Router /api/v1/users/{id} [delete]
 func (h *UserHandler) Delete(ctx fiber.Ctx) error {
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.IUserService.Delete(parsedId)
+	err = h.IUserService.Delete(id)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status:  fiber.StatusNotFound,
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
-
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  fiber.StatusOK,
-		Message: "Selected record has been deleted.",
-		Data:    result,
-	})
+		Message: "Selected record has been deleted."},
+	)
 }
 
 // Lock User by Id

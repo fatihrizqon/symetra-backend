@@ -11,12 +11,12 @@ import (
 
 type IPurchaseOrderRepository interface {
 	Create(po *entity.PurchaseOrder) error
-	FindById(companyId, id uuid.UUID) (entity.PurchaseOrder, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error)
+	FindById(companyID, id uuid.UUID) (entity.PurchaseOrder, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error)
 	Update(po *entity.PurchaseOrder) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
-	UpdateStatus(companyId, id uuid.UUID, status entity.PurchaseOrderStatus) error
+	Delete(companyID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
+	UpdateStatus(companyID, id uuid.UUID, status entity.PurchaseOrderStatus) error
 }
 
 type PurchaseOrderRepository struct {
@@ -33,10 +33,10 @@ func (r *PurchaseOrderRepository) Create(po *entity.PurchaseOrder) error {
 	})
 }
 
-func (r *PurchaseOrderRepository) FindById(companyId, id uuid.UUID) (entity.PurchaseOrder, error) {
+func (r *PurchaseOrderRepository) FindById(companyID, id uuid.UUID) (entity.PurchaseOrder, error) {
 	var po entity.PurchaseOrder
 	err := r.db.Preload("Vendor").Preload("Items").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&po).Error
 	return po, err
 }
@@ -49,10 +49,10 @@ var poSortColumns = map[string]string{
 	"updated_at": "purchase_orders.updated_at",
 }
 
-func (r *PurchaseOrderRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error) {
+func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error) {
 	var pos []entity.PurchaseOrder
 	var total int64
-	query := r.db.Model(&entity.PurchaseOrder{}).Where("company_id = ?", companyId)
+	query := r.db.Model(&entity.PurchaseOrder{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
@@ -94,16 +94,16 @@ func (r *PurchaseOrderRepository) Update(po *entity.PurchaseOrder) error {
 	})
 }
 
-func (r *PurchaseOrderRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ? AND status = ?", id, companyId, entity.POStatusDraft).Delete(&entity.PurchaseOrder{}).Error
+func (r *PurchaseOrderRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ? AND status = ?", id, companyID, entity.POStatusDraft).Delete(&entity.PurchaseOrder{}).Error
 }
 
-func (r *PurchaseOrderRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyId, ids, entity.POStatusDraft).Delete(&entity.PurchaseOrder{}).Error
+func (r *PurchaseOrderRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyID, ids, entity.POStatusDraft).Delete(&entity.PurchaseOrder{}).Error
 }
 
-func (r *PurchaseOrderRepository) UpdateStatus(companyId, id uuid.UUID, status entity.PurchaseOrderStatus) error {
+func (r *PurchaseOrderRepository) UpdateStatus(companyID, id uuid.UUID, status entity.PurchaseOrderStatus) error {
 	return r.db.Model(&entity.PurchaseOrder{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Update("status", status).Error
 }

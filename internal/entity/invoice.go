@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func (Invoice) TableName() string { return "invoices" }
 
 type InvoiceStatus string
 
@@ -53,4 +56,10 @@ type Invoice struct {
 	Payments []InvoicePayment `gorm:"foreignKey:InvoiceId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"payments"`
 }
 
-func (Invoice) TableName() string { return "invoices" }
+func (Invoice) SearchableFields() []string {
+	return []string{"invoice_number"}
+}
+
+func (Invoice) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
+}

@@ -9,13 +9,13 @@ import (
 )
 
 type IReportService interface {
-	GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) (response.GeneralLedgerResponse, error)
-	GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo string) (response.TrialBalanceResponse, error)
-	GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo string) (response.ProfitLossResponse, error)
-	GetBalanceSheet(companyId uuid.UUID, dateTo string) (response.BalanceSheetResponse, error)
-	GetCashFlow(companyId uuid.UUID, dateFrom, dateTo string) (response.CashFlowResponse, error)
-	GetEquityStatement(companyId uuid.UUID, dateFrom, dateTo string) (response.EquityStatementResponse, error)
-	GetJournalBook(companyId uuid.UUID, dateFrom, dateTo string) (response.JournalBookResponse, error)
+	GetGeneralLedger(companyID uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) (response.GeneralLedgerResponse, error)
+	GetTrialBalance(companyID uuid.UUID, dateFrom, dateTo string) (response.TrialBalanceResponse, error)
+	GetProfitLoss(companyID uuid.UUID, dateFrom, dateTo string) (response.ProfitLossResponse, error)
+	GetBalanceSheet(companyID uuid.UUID, dateTo string) (response.BalanceSheetResponse, error)
+	GetCashFlow(companyID uuid.UUID, dateFrom, dateTo string) (response.CashFlowResponse, error)
+	GetEquityStatement(companyID uuid.UUID, dateFrom, dateTo string) (response.EquityStatementResponse, error)
+	GetJournalBook(companyID uuid.UUID, dateFrom, dateTo string) (response.JournalBookResponse, error)
 }
 
 type ReportService struct {
@@ -30,13 +30,13 @@ func NewReportService(repo repository.IReportRepository, configRepo repository.I
 	}
 }
 
-func (s *ReportService) GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) (response.GeneralLedgerResponse, error) {
+func (s *ReportService) GetGeneralLedger(companyID uuid.UUID, coaId uuid.UUID, dateFrom, dateTo string) (response.GeneralLedgerResponse, error) {
 	var res response.GeneralLedgerResponse
 	if dateFrom == "" || dateTo == "" {
 		return res, errors.New("date_from and date_to are required")
 	}
 
-	rows, err := s.repo.GetGeneralLedger(companyId, coaId, dateFrom, dateTo)
+	rows, err := s.repo.GetGeneralLedger(companyID, coaId, dateFrom, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -73,7 +73,7 @@ func (s *ReportService) GetGeneralLedger(companyId uuid.UUID, coaId uuid.UUID, d
 	return res, nil
 }
 
-func (s *ReportService) GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo string) (response.TrialBalanceResponse, error) {
+func (s *ReportService) GetTrialBalance(companyID uuid.UUID, dateFrom, dateTo string) (response.TrialBalanceResponse, error) {
 	var res response.TrialBalanceResponse
 	res.Period.From = dateFrom
 	res.Period.To = dateTo
@@ -82,7 +82,7 @@ func (s *ReportService) GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo st
 		return res, errors.New("date_from and date_to are required")
 	}
 
-	rows, err := s.repo.GetTrialBalance(companyId, dateFrom, dateTo)
+	rows, err := s.repo.GetTrialBalance(companyID, dateFrom, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -106,14 +106,14 @@ func (s *ReportService) GetTrialBalance(companyId uuid.UUID, dateFrom, dateTo st
 	res.Summary.GrandTotalCredit = grandTotalCredit
 	// Using a small epsilon to account for floating point errors
 	res.Summary.IsBalanced = false
-	if (grandTotalDebit - grandTotalCredit) < 0.01 && (grandTotalDebit - grandTotalCredit) > -0.01 {
+	if (grandTotalDebit-grandTotalCredit) < 0.01 && (grandTotalDebit-grandTotalCredit) > -0.01 {
 		res.Summary.IsBalanced = true
 	}
 
 	return res, nil
 }
 
-func (s *ReportService) GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo string) (response.ProfitLossResponse, error) {
+func (s *ReportService) GetProfitLoss(companyID uuid.UUID, dateFrom, dateTo string) (response.ProfitLossResponse, error) {
 	var res response.ProfitLossResponse
 	res.Period.From = dateFrom
 	res.Period.To = dateTo
@@ -122,7 +122,7 @@ func (s *ReportService) GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo stri
 		return res, errors.New("date_from and date_to are required")
 	}
 
-	rows, err := s.repo.GetProfitLoss(companyId, dateFrom, dateTo)
+	rows, err := s.repo.GetProfitLoss(companyID, dateFrom, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -148,7 +148,7 @@ func (s *ReportService) GetProfitLoss(companyId uuid.UUID, dateFrom, dateTo stri
 	return res, nil
 }
 
-func (s *ReportService) GetBalanceSheet(companyId uuid.UUID, dateTo string) (response.BalanceSheetResponse, error) {
+func (s *ReportService) GetBalanceSheet(companyID uuid.UUID, dateTo string) (response.BalanceSheetResponse, error) {
 	var res response.BalanceSheetResponse
 	res.AsOf = dateTo
 
@@ -156,7 +156,7 @@ func (s *ReportService) GetBalanceSheet(companyId uuid.UUID, dateTo string) (res
 		return res, errors.New("date_to is required")
 	}
 
-	rows, err := s.repo.GetBalanceSheet(companyId, dateTo)
+	rows, err := s.repo.GetBalanceSheet(companyID, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -209,7 +209,7 @@ func (s *ReportService) GetBalanceSheet(companyId uuid.UUID, dateTo string) (res
 	}
 
 	res.TotalLiabilitiesAndEquity = res.Liabilities.Total + res.Equity.Total
-	
+
 	diff := res.Assets.Total - res.TotalLiabilitiesAndEquity
 	if diff < 0.01 && diff > -0.01 {
 		res.IsBalanced = true
@@ -218,7 +218,7 @@ func (s *ReportService) GetBalanceSheet(companyId uuid.UUID, dateTo string) (res
 	return res, nil
 }
 
-func (s *ReportService) GetCashFlow(companyId uuid.UUID, dateFrom, dateTo string) (response.CashFlowResponse, error) {
+func (s *ReportService) GetCashFlow(companyID uuid.UUID, dateFrom, dateTo string) (response.CashFlowResponse, error) {
 	var res response.CashFlowResponse
 	res.Period.From = dateFrom
 	res.Period.To = dateTo
@@ -227,7 +227,7 @@ func (s *ReportService) GetCashFlow(companyId uuid.UUID, dateFrom, dateTo string
 		return res, errors.New("date_from and date_to are required")
 	}
 
-	conf, err := s.configRepo.GetByCompanyId(companyId)
+	conf, err := s.configRepo.GetByCompanyId(companyID)
 	if err != nil {
 		return res, err
 	}
@@ -240,7 +240,7 @@ func (s *ReportService) GetCashFlow(companyId uuid.UUID, dateFrom, dateTo string
 		coaIds = append(coaIds, *conf.BankAccountId)
 	}
 
-	rows, err := s.repo.GetCashFlow(companyId, coaIds, dateFrom, dateTo)
+	rows, err := s.repo.GetCashFlow(companyID, coaIds, dateFrom, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -273,7 +273,7 @@ func (s *ReportService) GetCashFlow(companyId uuid.UUID, dateFrom, dateTo string
 	return res, nil
 }
 
-func (s *ReportService) GetEquityStatement(companyId uuid.UUID, dateFrom, dateTo string) (response.EquityStatementResponse, error) {
+func (s *ReportService) GetEquityStatement(companyID uuid.UUID, dateFrom, dateTo string) (response.EquityStatementResponse, error) {
 	var res response.EquityStatementResponse
 	res.Period.From = dateFrom
 	res.Period.To = dateTo
@@ -282,14 +282,14 @@ func (s *ReportService) GetEquityStatement(companyId uuid.UUID, dateFrom, dateTo
 	return res, nil
 }
 
-func (s *ReportService) GetJournalBook(companyId uuid.UUID, dateFrom, dateTo string) (response.JournalBookResponse, error) {
+func (s *ReportService) GetJournalBook(companyID uuid.UUID, dateFrom, dateTo string) (response.JournalBookResponse, error) {
 	var res response.JournalBookResponse
 
 	if dateFrom == "" || dateTo == "" {
 		return res, errors.New("date_from and date_to are required")
 	}
 
-	rows, err := s.repo.GetJournalBook(companyId, dateFrom, dateTo)
+	rows, err := s.repo.GetJournalBook(companyID, dateFrom, dateTo)
 	if err != nil {
 		return res, err
 	}
@@ -310,7 +310,7 @@ func (s *ReportService) GetJournalBook(companyId uuid.UUID, dateFrom, dateTo str
 			}
 			order = append(order, key)
 		}
-		
+
 		entryMap[key].Lines = append(entryMap[key].Lines, response.JournalBookLine{
 			CoaCode: r.CoaCode,
 			CoaName: r.CoaName,

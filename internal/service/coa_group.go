@@ -14,122 +14,102 @@ import (
 
 type ICOAGroupService interface {
 	Create(companyID uuid.UUID, req request.COAGroupCreateRequest) (entity.COAGroup, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAGroupResponse, int, error)
-	FindById(companyID, reqId uuid.UUID) (response.COAGroupResponse, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error)
+	FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COAGroup, error)
 	Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error)
-	Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error)
+	Delete(companyID uuid.UUID, reqId uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type COAGroupService struct {
-	ICOAGroupRepository repository.ICOAGroupRepository
 	validate            *validator.Validate
+	ICOAGroupRepository repository.ICOAGroupRepository
 }
 
-func NewCOAGroupService(repo repository.ICOAGroupRepository, validate *validator.Validate) ICOAGroupService {
-	return &COAGroupService{ICOAGroupRepository: repo, validate: validate}
+func NewCOAGroupService(validate *validator.Validate, repo repository.ICOAGroupRepository) ICOAGroupService {
+	return &COAGroupService{
+		validate:            validate,
+		ICOAGroupRepository: repo,
+	}
 }
 
 func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreateRequest) (entity.COAGroup, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.COAGroup{}, err
 	}
+
 	groupType := entity.COAGroupType(req.Type)
 	if !entity.ValidCOAGroupTypes[groupType] {
 		return entity.COAGroup{}, fmt.Errorf("invalid type: %s", req.Type)
 	}
-	g := entity.COAGroup{
-		CompanyId:     companyID,
-		Code:          req.Code,
-		Name:          req.Name,
-		Type:          groupType,
-		Category:      req.Category,
+
+	coa_group := entity.COAGroup{
+		CompanyId: companyID,
+		Code:      req.Code,
+		Name:      req.Name,
+		Type:      groupType,
+		Category:  req.Category,
 	}
-	return s.ICOAGroupRepository.Create(g)
+
+	return s.ICOAGroupRepository.Create(coa_group)
 }
 
-func (s *COAGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COAGroupResponse, int, error) {
-	entities, totalCount, err := s.ICOAGroupRepository.FindAll(companyID, qp)
+func (s *COAGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error) {
+	coa_groups, totalCount, err := s.ICOAGroupRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
 	if totalCount == 0 {
-		return []response.COAGroupResponse{}, 0, nil
+		return []entity.COAGroup{}, 0, nil
 	}
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-	resps := make([]response.COAGroupResponse, 0, len(entities))
-	for _, v := range entities {
-		resps = append(resps, mapCOAGroup(v))
-	}
-	return resps, totalCount, nil
+	return coa_groups, totalCount, nil
 }
 
-func (s *COAGroupService) FindById(companyID, reqId uuid.UUID) (response.COAGroupResponse, error) {
-	result, err := s.ICOAGroupRepository.FindById(companyID, reqId)
+func (s *COAGroupService) FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COAGroup, error) {
+	coa_group, err := s.ICOAGroupRepository.FindById(companyID, reqId)
 	if err != nil {
-		return response.COAGroupResponse{}, err
+		return entity.COAGroup{}, err
 	}
-	return mapCOAGroup(result), nil
+	return coa_group, nil
 }
 
 func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error) {
-	g, err := s.ICOAGroupRepository.FindById(companyID, req.Id)
+	coa_group, err := s.ICOAGroupRepository.FindById(companyID, req.Id)
 	if err != nil {
-		return g, err
+		return entity.COAGroup{}, err
 	}
 	groupType := entity.COAGroupType(req.Type)
 	if !entity.ValidCOAGroupTypes[groupType] {
 		return entity.COAGroup{}, fmt.Errorf("invalid type: %s", req.Type)
 	}
-	g.Code = req.Code
-	g.Name = req.Name
-	g.Type = groupType
-	g.Category = req.Category
-	return g, s.ICOAGroupRepository.Update(g)
+
+	coa_group.Code = req.Code
+	coa_group.Name = req.Name
+	coa_group.Type = groupType
+	coa_group.Category = req.Category
+
+	return coa_group, s.ICOAGroupRepository.Update(coa_group)
 }
 
-func (s *COAGroupService) Delete(companyID, reqId uuid.UUID) (entity.COAGroup, error) {
-	g, err := s.ICOAGroupRepository.FindById(companyID, reqId)
-	if err != nil {
-		return g, err
-	}
-	hasSubgroups, err := s.ICOAGroupRepository.HasSubgroups(companyID, reqId)
-	if err != nil {
-		return g, err
-	}
-	if hasSubgroups {
-		return g, fmt.Errorf("HAS_CHILD_RECORDS")
-	}
-	return g, s.ICOAGroupRepository.Delete(companyID, reqId)
+func (s *COAGroupService) Delete(companyID uuid.UUID, reqId uuid.UUID) error {
+	return s.ICOAGroupRepository.Delete(companyID, reqId)
 }
 
 func (s *COAGroupService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.ICOAGroupRepository.SelectDropdownList(companyID, qp)
+	coa_groups, total, err := s.ICOAGroupRepository.SelectDropdownList(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
-	for _, v := range entities {
-		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
+	results := make([]response.SelectDropdownListResponse, 0, len(coa_groups))
+	for _, v := range coa_groups {
+		results = append(results, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
 	}
-	return resps, total, nil
-}
-
-func mapCOAGroup(v entity.COAGroup) response.COAGroupResponse {
-	return response.COAGroupResponse{
-		Id:            v.Id,
-		Code:          v.Code,
-		Name:          v.Name,
-		Type:          string(v.Type),
-		Category:      v.Category,
-		Status:        v.Status,
-		CreatedAt:     v.CreatedAt,
-		UpdatedAt:     v.UpdatedAt,
-	}
+	return results, total, nil
 }
 
 func (s *COAGroupService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
@@ -138,4 +118,3 @@ func (s *COAGroupService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
 	}
 	return s.ICOAGroupRepository.BulkDestroy(companyID, ids)
 }
-

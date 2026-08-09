@@ -10,15 +10,16 @@ import (
 )
 
 type IBillRepository interface {
+	WithTransaction(fn func(txRepo IBillRepository) error) error
 	Create(bill *entity.Bill) error
-	FindById(companyId, id uuid.UUID) (entity.Bill, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int64, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.Bill, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error)
 	Update(bill *entity.Bill) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
-	UpdateStatus(companyId, id uuid.UUID, status entity.BillStatus, journalEntryId *uuid.UUID) error
+	Delete(companyID uuid.UUID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
+	UpdateStatus(companyID uuid.UUID, id uuid.UUID, status entity.BillStatus, journalEntryId *uuid.UUID) error
 	AddPayment(payment *entity.BillPayment) error
-	UpdatePaymentStatus(companyId, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error
+	UpdatePaymentStatus(companyID uuid.UUID, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error
 }
 
 type BillRepository struct {
@@ -29,16 +30,21 @@ func NewBillRepository(db *gorm.DB) IBillRepository {
 	return &BillRepository{db: db}
 }
 
-func (r *BillRepository) Create(bill *entity.Bill) error {
+func (r *BillRepository) WithTransaction(fn func(txRepo IBillRepository) error) error {
 	return r.db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(bill).Error
+		txRepo := &BillRepository{db: tx}
+		return fn(txRepo)
 	})
 }
 
-func (r *BillRepository) FindById(companyId, id uuid.UUID) (entity.Bill, error) {
+func (r *BillRepository) Create(bill *entity.Bill) error {
+	return r.db.Create(bill).Error
+}
+
+func (r *BillRepository) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Bill, error) {
 	var bill entity.Bill
 	err := r.db.Preload("Vendor").Preload("Items").Preload("Items.Account").Preload("Payments").Preload("Payments.PaymentAccount").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&bill).Error
 	return bill, err
 }
@@ -53,10 +59,11 @@ var billSortColumns = map[string]string{
 	"updated_at":     "bills.updated_at",
 }
 
-func (r *BillRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int64, error) {
-	var bills []entity.Bill
-	var total int64
-	query := r.db.Model(&entity.Bill{}).Where("company_id = ?", companyId)
+func (r *BillRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error) {
+	var entities []entity.Bill
+	var totalCount int64
+
+	query := r.db.Model(&entity.Bill{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
@@ -70,7 +77,7 @@ func (r *BillRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]e
 		query = query.Where("payment_status = ?", statusValues[0])
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -88,28 +95,26 @@ func (r *BillRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]e
 
 	query = util.ApplyPagination(query, qp)
 
-	err := query.Preload("Vendor").Find(&bills).Error
-	return bills, total, err
+	err := query.Preload("Vendor").Find(&entities).Error
+	return entities, int(totalCount), err
 }
 
 func (r *BillRepository) Update(bill *entity.Bill) error {
-	return r.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("bill_id = ?", bill.Id).Delete(&entity.BillItem{}).Error; err != nil {
-			return err
-		}
-		return tx.Save(bill).Error
-	})
+	if err := r.db.Where("bill_id = ?", bill.Id).Delete(&entity.BillItem{}).Error; err != nil {
+		return err
+	}
+	return r.db.Save(bill).Error
 }
 
-func (r *BillRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ? AND bill_status = ?", id, companyId, entity.BillStatusDraft).Delete(&entity.Bill{}).Error
+func (r *BillRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ? AND bill_status = ?", id, companyID, entity.BillStatusDraft).Delete(&entity.Bill{}).Error
 }
 
-func (r *BillRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ? AND bill_status = ?", companyId, ids, entity.BillStatusDraft).Delete(&entity.Bill{}).Error
+func (r *BillRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ? AND bill_status = ?", companyID, ids, entity.BillStatusDraft).Delete(&entity.Bill{}).Error
 }
 
-func (r *BillRepository) UpdateStatus(companyId, id uuid.UUID, status entity.BillStatus, journalEntryId *uuid.UUID) error {
+func (r *BillRepository) UpdateStatus(companyID, id uuid.UUID, status entity.BillStatus, journalEntryId *uuid.UUID) error {
 	updates := map[string]interface{}{
 		"bill_status": status,
 	}
@@ -117,7 +122,7 @@ func (r *BillRepository) UpdateStatus(companyId, id uuid.UUID, status entity.Bil
 		updates["journal_entry_id"] = *journalEntryId
 	}
 	return r.db.Model(&entity.Bill{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Updates(updates).Error
 }
 
@@ -125,9 +130,9 @@ func (r *BillRepository) AddPayment(payment *entity.BillPayment) error {
 	return r.db.Create(payment).Error
 }
 
-func (r *BillRepository) UpdatePaymentStatus(companyId, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error {
+func (r *BillRepository) UpdatePaymentStatus(companyID, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error {
 	return r.db.Model(&entity.Bill{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Updates(map[string]interface{}{
 			"amount_paid":    amountPaid,
 			"amount_due":     gorm.Expr("grand_total - ?", amountPaid),

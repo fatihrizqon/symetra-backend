@@ -6,33 +6,38 @@ import (
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 type IPurchaseOrderService interface {
-	Create(companyId, userId uuid.UUID, req request.PurchaseOrderCreateRequest) (response.PurchaseOrderResponse, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.PurchaseOrderResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.PurchaseOrderResponse, error)
-	Update(companyId, id uuid.UUID, req request.PurchaseOrderUpdateRequest) (response.PurchaseOrderResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Destroy(companyId uuid.UUID, ids []uuid.UUID) error
-	Approve(companyId, id uuid.UUID) error
+	Create(companyID uuid.UUID, userId uuid.UUID, req request.PurchaseOrderCreateRequest) (entity.PurchaseOrder, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.PurchaseOrder, error)
+	Update(companyID uuid.UUID, req request.PurchaseOrderUpdateRequest) (entity.PurchaseOrder, error)
+	Delete(companyID uuid.UUID, id uuid.UUID) error
+	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
+	Approve(companyID uuid.UUID, id uuid.UUID) error
 }
 
 type PurchaseOrderService struct {
-	repo       repository.IPurchaseOrderRepository
-	vendorRepo repository.IVendorRepository
+	validate                 *validator.Validate
+	IPurchaseOrderRepository repository.IPurchaseOrderRepository
+	IVendorRepository        repository.IVendorRepository
 }
 
-func NewPurchaseOrderService(repo repository.IPurchaseOrderRepository, vendorRepo repository.IVendorRepository) IPurchaseOrderService {
-	return &PurchaseOrderService{repo: repo, vendorRepo: vendorRepo}
+func NewPurchaseOrderService(validate *validator.Validate, repo repository.IPurchaseOrderRepository, vendorRepo repository.IVendorRepository) IPurchaseOrderService {
+	return &PurchaseOrderService{
+		validate:                 validate,
+		IPurchaseOrderRepository: repo,
+		IVendorRepository:        vendorRepo,
+	}
 }
 
-func generatePoNumber(companyId uuid.UUID, date time.Time) string {
+func generatePoNumber(companyID uuid.UUID, date time.Time) string {
 	// simple po number generator, in real app you might want this in repo to prevent race conditions
 	return fmt.Sprintf("PO-%s-%d", date.Format("20060102"), time.Now().UnixMilli())
 }
@@ -55,75 +60,10 @@ func (s *PurchaseOrderService) calculateTotals(items []entity.PurchaseOrderItem,
 	return
 }
 
-func mapPurchaseOrderToResponse(po entity.PurchaseOrder) response.PurchaseOrderResponse {
-	respItems := make([]response.PurchaseOrderItemResponse, 0, len(po.Items))
-	for _, item := range po.Items {
-		respItems = append(respItems, response.PurchaseOrderItemResponse{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-		})
-	}
-
-	resp := response.PurchaseOrderResponse{
-		Id:              po.Id,
-		CompanyId:       po.CompanyId,
-		PoNumber:        po.PoNumber,
-		VendorId:        po.VendorId,
-		PoDate:          po.PoDate,
-		ExpiryDate:      po.ExpiryDate,
-		Subtotal:        po.Subtotal,
-		DiscountTotal:   po.DiscountTotal,
-		Dpp:             po.Dpp,
-		TaxRate:         po.TaxRate,
-		TaxAmount:       po.TaxAmount,
-		GrandTotal:      po.GrandTotal,
-		Status:          string(po.Status),
-		Notes:           po.Notes,
-		ConvertedBillId: po.ConvertedBillId,
-		CreatedBy:       po.CreatedBy,
-		CreatedAt:       po.CreatedAt,
-		UpdatedAt:       po.UpdatedAt,
-		Items:           respItems,
-	}
-
-	if po.Vendor != nil {
-		vendorResp := response.VendorResponse{
-			Id:        po.Vendor.Id,
-			CompanyId: po.Vendor.CompanyId,
-			Code:      po.Vendor.Code,
-			Name:      po.Vendor.Name,
-			Email:     po.Vendor.Email,
-			Phone:     po.Vendor.Phone,
-			Address:   po.Vendor.Address,
-			CoaId:     po.Vendor.CoaId,
-			Status:    po.Vendor.Status,
-			CreatedAt: po.Vendor.CreatedAt,
-			UpdatedAt: po.Vendor.UpdatedAt,
-		}
-		if po.Vendor.Coa != nil {
-			vendorResp.Coa = &response.COAResponse{
-				Id:            po.Vendor.Coa.Id,
-				Code:          po.Vendor.Coa.Code,
-				Name:          po.Vendor.Coa.Name,
-				IsContra:      po.Vendor.Coa.IsContra,
-				NormalBalance: po.Vendor.Coa.GetAbsoluteNormalBalance(),
-			}
-		}
-		resp.Vendor = &vendorResp
-	}
-
-	return resp
-}
-
-func (s *PurchaseOrderService) Create(companyId, userId uuid.UUID, req request.PurchaseOrderCreateRequest) (response.PurchaseOrderResponse, error) {
-	_, err := s.vendorRepo.FindById(companyId, req.VendorId)
+func (s *PurchaseOrderService) Create(companyID uuid.UUID, userId uuid.UUID, req request.PurchaseOrderCreateRequest) (entity.PurchaseOrder, error) {
+	_, err := s.IVendorRepository.FindById(companyID, req.VendorId)
 	if err != nil {
-		return response.PurchaseOrderResponse{}, errors.New("vendor not found")
+		return entity.PurchaseOrder{}, errors.New("vendor not found")
 	}
 
 	var items []entity.PurchaseOrderItem
@@ -140,8 +80,8 @@ func (s *PurchaseOrderService) Create(companyId, userId uuid.UUID, req request.P
 	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(items, req.TaxRate)
 
 	po := entity.PurchaseOrder{
-		CompanyId:     companyId,
-		PoNumber:      generatePoNumber(companyId, req.PoDate),
+		CompanyId:     companyID,
+		PoNumber:      generatePoNumber(companyID, req.PoDate),
 		VendorId:      req.VendorId,
 		PoDate:        req.PoDate,
 		ExpiryDate:    req.ExpiryDate,
@@ -157,21 +97,86 @@ func (s *PurchaseOrderService) Create(companyId, userId uuid.UUID, req request.P
 		Items:         items,
 	}
 
-	if err := s.repo.Create(&po); err != nil {
-		return response.PurchaseOrderResponse{}, err
+	if err := s.IPurchaseOrderRepository.Create(&po); err != nil {
+		return entity.PurchaseOrder{}, err
 	}
-	createdPo, _ := s.repo.FindById(companyId, po.Id)
-	return mapPurchaseOrderToResponse(createdPo), nil
+
+	createdPo, err := s.IPurchaseOrderRepository.FindById(companyID, po.Id)
+	if err != nil {
+		return entity.PurchaseOrder{}, err
+	}
+
+	poItems := make([]entity.PurchaseOrderItem, 0, len(createdPo.Items))
+	for _, item := range createdPo.Items {
+		poItems = append(poItems, entity.PurchaseOrderItem{
+			Id:            item.Id,
+			Description:   item.Description,
+			Qty:           item.Qty,
+			Price:         item.Price,
+			Discount:      item.Discount,
+			TaxApplicable: item.TaxApplicable,
+			Amount:        item.Amount,
+		})
+	}
+
+	result := entity.PurchaseOrder{
+		Id:              createdPo.Id,
+		CompanyId:       createdPo.CompanyId,
+		PoNumber:        createdPo.PoNumber,
+		VendorId:        createdPo.VendorId,
+		PoDate:          createdPo.PoDate,
+		ExpiryDate:      createdPo.ExpiryDate,
+		Subtotal:        createdPo.Subtotal,
+		DiscountTotal:   createdPo.DiscountTotal,
+		Dpp:             createdPo.Dpp,
+		TaxRate:         createdPo.TaxRate,
+		TaxAmount:       createdPo.TaxAmount,
+		GrandTotal:      createdPo.GrandTotal,
+		Status:          createdPo.Status,
+		Notes:           createdPo.Notes,
+		ConvertedBillId: createdPo.ConvertedBillId,
+		CreatedBy:       createdPo.CreatedBy,
+		CreatedAt:       createdPo.CreatedAt,
+		UpdatedAt:       createdPo.UpdatedAt,
+		Items:           poItems,
+	}
+
+	if createdPo.Vendor != nil {
+		vendor := entity.Vendor{
+			Id:        createdPo.Vendor.Id,
+			CompanyId: createdPo.Vendor.CompanyId,
+			Code:      createdPo.Vendor.Code,
+			Name:      createdPo.Vendor.Name,
+			Email:     createdPo.Vendor.Email,
+			Phone:     createdPo.Vendor.Phone,
+			Address:   createdPo.Vendor.Address,
+			CoaId:     createdPo.Vendor.CoaId,
+			Status:    createdPo.Vendor.Status,
+			CreatedAt: createdPo.Vendor.CreatedAt,
+			UpdatedAt: createdPo.Vendor.UpdatedAt,
+		}
+		if createdPo.Vendor.Coa != nil {
+			vendor.Coa = &entity.COA{
+				Id:       createdPo.Vendor.Coa.Id,
+				Code:     createdPo.Vendor.Coa.Code,
+				Name:     createdPo.Vendor.Coa.Name,
+				IsContra: createdPo.Vendor.Coa.IsContra,
+			}
+		}
+		result.Vendor = &vendor
+	}
+
+	return result, nil
 }
 
-func (s *PurchaseOrderService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.PurchaseOrderResponse, int, error) {
-	pos, total, err := s.repo.FindAll(companyId, qp)
+func (s *PurchaseOrderService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
+	pos, total, err := s.IPurchaseOrderRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if total == 0 {
-		return []response.PurchaseOrderResponse{}, 0, nil
+		return []entity.PurchaseOrder{}, 0, nil
 	}
 
 	totalPages := (int(total) + qp.PageSize - 1) / qp.PageSize
@@ -179,41 +184,162 @@ func (s *PurchaseOrderService) FindAll(companyId uuid.UUID, qp *util.QueryParams
 		return nil, int(total), nil
 	}
 
-	resps := make([]response.PurchaseOrderResponse, 0, len(pos))
+	resps := make([]entity.PurchaseOrder, 0, len(pos))
 	for _, p := range pos {
-		resps = append(resps, mapPurchaseOrderToResponse(p))
+		respItems := make([]entity.PurchaseOrderItem, 0, len(p.Items))
+		for _, item := range p.Items {
+			respItems = append(respItems, entity.PurchaseOrderItem{
+				Id:            item.Id,
+				Description:   item.Description,
+				Qty:           item.Qty,
+				Price:         item.Price,
+				Discount:      item.Discount,
+				TaxApplicable: item.TaxApplicable,
+				Amount:        item.Amount,
+			})
+		}
+
+		resp := entity.PurchaseOrder{
+			Id:              p.Id,
+			CompanyId:       p.CompanyId,
+			PoNumber:        p.PoNumber,
+			VendorId:        p.VendorId,
+			PoDate:          p.PoDate,
+			ExpiryDate:      p.ExpiryDate,
+			Subtotal:        p.Subtotal,
+			DiscountTotal:   p.DiscountTotal,
+			Dpp:             p.Dpp,
+			TaxRate:         p.TaxRate,
+			TaxAmount:       p.TaxAmount,
+			GrandTotal:      p.GrandTotal,
+			Status:          p.Status,
+			Notes:           p.Notes,
+			ConvertedBillId: p.ConvertedBillId,
+			CreatedBy:       p.CreatedBy,
+			CreatedAt:       p.CreatedAt,
+			UpdatedAt:       p.UpdatedAt,
+			Items:           respItems,
+		}
+
+		if p.Vendor != nil {
+			vendor := entity.Vendor{
+				Id:        p.Vendor.Id,
+				CompanyId: p.Vendor.CompanyId,
+				Code:      p.Vendor.Code,
+				Name:      p.Vendor.Name,
+				Email:     p.Vendor.Email,
+				Phone:     p.Vendor.Phone,
+				Address:   p.Vendor.Address,
+				CoaId:     p.Vendor.CoaId,
+				Status:    p.Vendor.Status,
+				CreatedAt: p.Vendor.CreatedAt,
+				UpdatedAt: p.Vendor.UpdatedAt,
+			}
+			if p.Vendor.Coa != nil {
+				vendor.Coa = &entity.COA{
+					Id:       p.Vendor.Coa.Id,
+					Code:     p.Vendor.Coa.Code,
+					Name:     p.Vendor.Coa.Name,
+					IsContra: p.Vendor.Coa.IsContra,
+				}
+			}
+			resp.Vendor = &vendor
+		}
+
+		resps = append(resps, resp)
 	}
 
 	return resps, int(total), nil
 }
 
-func (s *PurchaseOrderService) FindById(companyId, id uuid.UUID) (response.PurchaseOrderResponse, error) {
-	po, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.PurchaseOrder, error) {
+	po, err := s.IPurchaseOrderRepository.FindById(companyID, id)
 	if err != nil {
-		return response.PurchaseOrderResponse{}, errors.New("purchase order not found")
+		return entity.PurchaseOrder{}, errors.New("purchase order not found")
 	}
-	return mapPurchaseOrderToResponse(po), nil
+
+	respItems := make([]entity.PurchaseOrderItem, 0, len(po.Items))
+	for _, item := range po.Items {
+		respItems = append(respItems, entity.PurchaseOrderItem{
+			Id:            item.Id,
+			Description:   item.Description,
+			Qty:           item.Qty,
+			Price:         item.Price,
+			Discount:      item.Discount,
+			TaxApplicable: item.TaxApplicable,
+			Amount:        item.Amount,
+		})
+	}
+
+	resp := entity.PurchaseOrder{
+		Id:              po.Id,
+		CompanyId:       po.CompanyId,
+		PoNumber:        po.PoNumber,
+		VendorId:        po.VendorId,
+		PoDate:          po.PoDate,
+		ExpiryDate:      po.ExpiryDate,
+		Subtotal:        po.Subtotal,
+		DiscountTotal:   po.DiscountTotal,
+		Dpp:             po.Dpp,
+		TaxRate:         po.TaxRate,
+		TaxAmount:       po.TaxAmount,
+		GrandTotal:      po.GrandTotal,
+		Status:          po.Status,
+		Notes:           po.Notes,
+		ConvertedBillId: po.ConvertedBillId,
+		CreatedBy:       po.CreatedBy,
+		CreatedAt:       po.CreatedAt,
+		UpdatedAt:       po.UpdatedAt,
+		Items:           respItems,
+	}
+
+	if po.Vendor != nil {
+		vendor := entity.Vendor{
+			Id:        po.Vendor.Id,
+			CompanyId: po.Vendor.CompanyId,
+			Code:      po.Vendor.Code,
+			Name:      po.Vendor.Name,
+			Email:     po.Vendor.Email,
+			Phone:     po.Vendor.Phone,
+			Address:   po.Vendor.Address,
+			CoaId:     po.Vendor.CoaId,
+			Status:    po.Vendor.Status,
+			CreatedAt: po.Vendor.CreatedAt,
+			UpdatedAt: po.Vendor.UpdatedAt,
+		}
+		if po.Vendor.Coa != nil {
+			vendor.Coa = &entity.COA{
+				Id:       po.Vendor.Coa.Id,
+				Code:     po.Vendor.Coa.Code,
+				Name:     po.Vendor.Coa.Name,
+				IsContra: po.Vendor.Coa.IsContra,
+			}
+		}
+		resp.Vendor = &vendor
+	}
+
+	return resp, nil
 }
 
-func (s *PurchaseOrderService) Update(companyId, id uuid.UUID, req request.PurchaseOrderUpdateRequest) (response.PurchaseOrderResponse, error) {
-	po, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Update(companyID uuid.UUID, req request.PurchaseOrderUpdateRequest) (entity.PurchaseOrder, error) {
+	po, err := s.IPurchaseOrderRepository.FindById(companyID, req.Id)
 	if err != nil {
-		return response.PurchaseOrderResponse{}, errors.New("purchase order not found")
+		return entity.PurchaseOrder{}, errors.New("purchase order not found")
 	}
 
 	if po.Status != entity.POStatusDraft {
-		return response.PurchaseOrderResponse{}, errors.New("only draft purchase orders can be updated")
+		return entity.PurchaseOrder{}, errors.New("only draft purchase orders can be updated")
 	}
 
-	_, err = s.vendorRepo.FindById(companyId, req.VendorId)
+	_, err = s.IVendorRepository.FindById(companyID, req.VendorId)
 	if err != nil {
-		return response.PurchaseOrderResponse{}, errors.New("vendor not found")
+		return entity.PurchaseOrder{}, errors.New("vendor not found")
 	}
 
 	var items []entity.PurchaseOrderItem
 	for _, ir := range req.Items {
 		items = append(items, entity.PurchaseOrderItem{
-			PurchaseOrderId: id,
+			PurchaseOrderId: req.Id,
 			Description:     ir.Description,
 			Qty:             ir.Qty,
 			Price:           ir.Price,
@@ -236,38 +362,103 @@ func (s *PurchaseOrderService) Update(companyId, id uuid.UUID, req request.Purch
 	po.TaxAmount = taxAmount
 	po.GrandTotal = grandTotal
 
-	if err := s.repo.Update(&po); err != nil {
-		return response.PurchaseOrderResponse{}, err
+	if err := s.IPurchaseOrderRepository.Update(&po); err != nil {
+		return entity.PurchaseOrder{}, err
 	}
-	updatedPo, _ := s.repo.FindById(companyId, po.Id)
-	return mapPurchaseOrderToResponse(updatedPo), nil
+
+	updatedPo, err := s.IPurchaseOrderRepository.FindById(companyID, po.Id)
+	if err != nil {
+		return entity.PurchaseOrder{}, err
+	}
+
+	respItems := make([]entity.PurchaseOrderItem, 0, len(updatedPo.Items))
+	for _, item := range updatedPo.Items {
+		respItems = append(respItems, entity.PurchaseOrderItem{
+			Id:            item.Id,
+			Description:   item.Description,
+			Qty:           item.Qty,
+			Price:         item.Price,
+			Discount:      item.Discount,
+			TaxApplicable: item.TaxApplicable,
+			Amount:        item.Amount,
+		})
+	}
+
+	resp := entity.PurchaseOrder{
+		Id:              updatedPo.Id,
+		CompanyId:       updatedPo.CompanyId,
+		PoNumber:        updatedPo.PoNumber,
+		VendorId:        updatedPo.VendorId,
+		PoDate:          updatedPo.PoDate,
+		ExpiryDate:      updatedPo.ExpiryDate,
+		Subtotal:        updatedPo.Subtotal,
+		DiscountTotal:   updatedPo.DiscountTotal,
+		Dpp:             updatedPo.Dpp,
+		TaxRate:         updatedPo.TaxRate,
+		TaxAmount:       updatedPo.TaxAmount,
+		GrandTotal:      updatedPo.GrandTotal,
+		Status:          updatedPo.Status,
+		Notes:           updatedPo.Notes,
+		ConvertedBillId: updatedPo.ConvertedBillId,
+		CreatedBy:       updatedPo.CreatedBy,
+		CreatedAt:       updatedPo.CreatedAt,
+		UpdatedAt:       updatedPo.UpdatedAt,
+		Items:           respItems,
+	}
+
+	if updatedPo.Vendor != nil {
+		vendor := entity.Vendor{
+			Id:        updatedPo.Vendor.Id,
+			CompanyId: updatedPo.Vendor.CompanyId,
+			Code:      updatedPo.Vendor.Code,
+			Name:      updatedPo.Vendor.Name,
+			Email:     updatedPo.Vendor.Email,
+			Phone:     updatedPo.Vendor.Phone,
+			Address:   updatedPo.Vendor.Address,
+			CoaId:     updatedPo.Vendor.CoaId,
+			Status:    updatedPo.Vendor.Status,
+			CreatedAt: updatedPo.Vendor.CreatedAt,
+			UpdatedAt: updatedPo.Vendor.UpdatedAt,
+		}
+		if updatedPo.Vendor.Coa != nil {
+			vendor.Coa = &entity.COA{
+				Id:       updatedPo.Vendor.Coa.Id,
+				Code:     updatedPo.Vendor.Coa.Code,
+				Name:     updatedPo.Vendor.Coa.Name,
+				IsContra: updatedPo.Vendor.Coa.IsContra,
+			}
+		}
+		resp.Vendor = &vendor
+	}
+
+	return resp, nil
 }
 
-func (s *PurchaseOrderService) Delete(companyId, id uuid.UUID) error {
-	po, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Delete(companyID uuid.UUID, id uuid.UUID) error {
+	po, err := s.IPurchaseOrderRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("purchase order not found")
 	}
 	if po.Status != entity.POStatusDraft {
 		return errors.New("only draft purchase orders can be deleted")
 	}
-	return s.repo.Delete(companyId, id)
+	return s.IPurchaseOrderRepository.Delete(companyID, id)
 }
 
-func (s *PurchaseOrderService) Destroy(companyId uuid.UUID, ids []uuid.UUID) error {
+func (s *PurchaseOrderService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
 	if len(ids) == 0 {
 		return errors.New("no ids provided")
 	}
-	return s.repo.BulkDestroy(companyId, ids)
+	return s.IPurchaseOrderRepository.BulkDestroy(companyID, ids)
 }
 
-func (s *PurchaseOrderService) Approve(companyId, id uuid.UUID) error {
-	po, err := s.repo.FindById(companyId, id)
+func (s *PurchaseOrderService) Approve(companyID uuid.UUID, id uuid.UUID) error {
+	po, err := s.IPurchaseOrderRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("purchase order not found")
 	}
 	if po.Status != entity.POStatusDraft {
 		return errors.New("only draft purchase orders can be approved")
 	}
-	return s.repo.UpdateStatus(companyId, id, entity.POStatusApproved)
+	return s.IPurchaseOrderRepository.UpdateStatus(companyID, id, entity.POStatusApproved)
 }

@@ -26,11 +26,11 @@ type ICompanyRepository interface {
 	FindAll(qp *util.QueryParams) ([]entity.Company, int, error)
 	FindById(id uuid.UUID) (entity.Company, error)
 	FindMyCompanies(userID uuid.UUID) ([]entity.CompanyMember, error)
-	FindMember(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error)
+	FindMember(ctx context.Context, companyID uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error)
 	FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error)
 	AssignMember(member entity.CompanyMember) (entity.CompanyMember, error)
-	UpdateMemberRole(companyId uuid.UUID, userId uuid.UUID, role string) error
-	RemoveMember(companyId uuid.UUID, userId uuid.UUID) error
+	UpdateMemberRole(companyID uuid.UUID, userId uuid.UUID, role string) error
+	RemoveMember(companyID uuid.UUID, userId uuid.UUID) error
 	Update(entity.Company) error
 	Delete(id uuid.UUID) error
 	BulkDestroy(ids []uuid.UUID) error
@@ -104,20 +104,20 @@ func (r *CompanyRepository) FindMyCompanies(userId uuid.UUID) ([]entity.CompanyM
 	return members, nil
 }
 
-func (r *CompanyRepository) FindMember(ctx context.Context, companyId uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error) {
+func (r *CompanyRepository) FindMember(ctx context.Context, companyID uuid.UUID, userId uuid.UUID) (entity.CompanyMember, error) {
 	var member entity.CompanyMember
 	err := r.Db.WithContext(ctx).Model(&entity.CompanyMember{}).
-		Where("company_id = ? AND user_id = ?", companyId, userId).
+		Where("company_id = ? AND user_id = ?", companyID, userId).
 		First(&member).Error
 	return member, err
 }
 
-func (r *CompanyRepository) FindMembersByCompany(companyId uuid.UUID) ([]entity.CompanyMember, error) {
+func (r *CompanyRepository) FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error) {
 	var members []entity.CompanyMember
 	err := r.Db.Model(&entity.CompanyMember{}).
 		Preload("Company").
 		Preload("User").
-		Where("company_id = ?", companyId).
+		Where("company_id = ?", companyID).
 		Find(&members).Error
 	if err != nil {
 		return nil, err
@@ -134,9 +134,9 @@ func (r *CompanyRepository) AssignMember(member entity.CompanyMember) (entity.Co
 	return member, err
 }
 
-func (r *CompanyRepository) UpdateMemberRole(companyId uuid.UUID, userId uuid.UUID, role string) error {
+func (r *CompanyRepository) UpdateMemberRole(companyID uuid.UUID, userId uuid.UUID, role string) error {
 	if err := r.Db.Model(&entity.CompanyMember{}).
-		Where("company_id = ?", companyId).
+		Where("company_id = ?", companyID).
 		Where("user_id = ?", userId).
 		Update("role", role).Error; err != nil {
 		return err
@@ -144,9 +144,9 @@ func (r *CompanyRepository) UpdateMemberRole(companyId uuid.UUID, userId uuid.UU
 	return nil
 }
 
-func (r *CompanyRepository) RemoveMember(companyId uuid.UUID, userId uuid.UUID) error {
+func (r *CompanyRepository) RemoveMember(companyID uuid.UUID, userId uuid.UUID) error {
 	if err := r.Db.Model(&entity.CompanyMember{}).
-		Where("company_id = ?", companyId).
+		Where("company_id = ?", companyID).
 		Where("user_id = ?", userId).
 		Delete(&entity.CompanyMember{}).Error; err != nil {
 		return err

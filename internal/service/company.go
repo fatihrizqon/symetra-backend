@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
@@ -15,35 +14,31 @@ import (
 
 type ICompanyService interface {
 	Create(req request.CompanyCreateRequest, userId uuid.UUID) (entity.Company, error)
-	FindAll(qp *util.QueryParams) ([]response.CompanyResponse, int, error)
-	FindById(reqId uuid.UUID) (response.CompanyResponse, error)
-	FindMyCompanies(userID uuid.UUID) ([]response.MyCompanyResponse, error)
-	FindMembersByCompany(companyId uuid.UUID) ([]response.CompanyMemberResponse, error)
-	AssignMember(req request.AssignMemberRequest, invitedBy uuid.UUID) (response.CompanyMemberResponse, error)
+	FindAll(qp *util.QueryParams) ([]entity.Company, int, error)
+	FindById(reqId uuid.UUID) (entity.Company, error)
+	FindMyCompanies(userID uuid.UUID) ([]entity.Company, error)
+	FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error)
+	AssignMember(req request.AssignMemberRequest, invitedBy uuid.UUID) (entity.CompanyMember, error)
 	UpdateMemberRole(req request.UpdateMemberRoleRequest) error
-	RemoveMember(companyId uuid.UUID, userId uuid.UUID) error
-	Update(req request.CompanyUpdateRequest) (response.CompanyResponse, error)
-	Delete(reqId uuid.UUID) (response.CompanyResponse, error)
-	SelectCompany(sessionID uuid.UUID, companyID uuid.UUID, userID uuid.UUID) (response.CompanyResponse, error)
-	GetActiveCompany(sessionID uuid.UUID) (response.CompanyResponse, error)
+	RemoveMember(companyID uuid.UUID, userId uuid.UUID) error
+	Update(req request.CompanyUpdateRequest) (entity.Company, error)
+	Delete(reqId uuid.UUID) error
+	SelectCompany(sessionID uuid.UUID, companyID uuid.UUID, userID uuid.UUID) (entity.Company, error)
+	GetActiveCompany(sessionID uuid.UUID) (entity.Company, error)
 	Destroy(ids []uuid.UUID) error
 }
 
 type CompanyService struct {
+	validate           *validator.Validate
 	ICompanyRepository repository.ICompanyRepository
 	ITokenRepository   repository.ITokenRepository
-	validate           *validator.Validate
 }
 
-func NewCompanyService(
-	repo repository.ICompanyRepository,
-	tokenRepo repository.ITokenRepository,
-	validate *validator.Validate,
-) ICompanyService {
+func NewCompanyService(validate *validator.Validate, repo repository.ICompanyRepository, tokenRepo repository.ITokenRepository) ICompanyService {
 	return &CompanyService{
+		validate:           validate,
 		ICompanyRepository: repo,
 		ITokenRepository:   tokenRepo,
-		validate:           validate,
 	}
 }
 
@@ -52,7 +47,7 @@ func (s *CompanyService) Create(req request.CompanyCreateRequest, userId uuid.UU
 		return entity.Company{}, err
 	}
 
-	c := entity.Company{
+	company := entity.Company{
 		Name:      req.Name,
 		LegalName: req.LegalName,
 		TaxID:     req.TaxID,
@@ -66,13 +61,13 @@ func (s *CompanyService) Create(req request.CompanyCreateRequest, userId uuid.UU
 
 	err := s.ICompanyRepository.WithTransaction(func(txRepo repository.ICompanyRepository) error {
 		var txErr error
-		c, txErr = txRepo.Create(c)
+		company, txErr = txRepo.Create(company)
 		if txErr != nil {
 			return txErr
 		}
 
 		_, txErr = txRepo.AssignMember(entity.CompanyMember{
-			CompanyId: c.Id,
+			CompanyId: company.Id,
 			UserId:    userId,
 			Role:      "owner",
 		})
@@ -80,17 +75,17 @@ func (s *CompanyService) Create(req request.CompanyCreateRequest, userId uuid.UU
 		return txErr
 	})
 
-	return c, err
+	return company, err
 }
 
-func (s *CompanyService) FindAll(qp *util.QueryParams) ([]response.CompanyResponse, int, error) {
-	entities, totalCount, err := s.ICompanyRepository.FindAll(qp)
+func (s *CompanyService) FindAll(qp *util.QueryParams) ([]entity.Company, int, error) {
+	companies, totalCount, err := s.ICompanyRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
 
 	if totalCount == 0 {
-		return []response.CompanyResponse{}, 0, nil
+		return []entity.Company{}, 0, nil
 	}
 
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
@@ -98,9 +93,9 @@ func (s *CompanyService) FindAll(qp *util.QueryParams) ([]response.CompanyRespon
 		return nil, totalCount, nil
 	}
 
-	resps := make([]response.CompanyResponse, 0, len(entities))
-	for _, c := range entities {
-		resp := response.CompanyResponse{
+	results := make([]entity.Company, 0, len(companies))
+	for _, c := range companies {
+		result := entity.Company{
 			Id:        c.Id,
 			Name:      c.Name,
 			LegalName: c.LegalName,
@@ -113,21 +108,20 @@ func (s *CompanyService) FindAll(qp *util.QueryParams) ([]response.CompanyRespon
 			CreatedBy: c.CreatedBy,
 			CreatedAt: c.CreatedAt,
 			UpdatedAt: c.UpdatedAt,
-
 		}
-		resps = append(resps, resp)
+		results = append(results, result)
 	}
 
-	return resps, totalCount, nil
+	return results, totalCount, nil
 }
 
-func (s *CompanyService) FindById(reqId uuid.UUID) (response.CompanyResponse, error) {
+func (s *CompanyService) FindById(reqId uuid.UUID) (entity.Company, error) {
 	c, err := s.ICompanyRepository.FindById(reqId)
 	if err != nil {
-		return response.CompanyResponse{}, err
+		return entity.Company{}, err
 	}
 
-	resp := response.CompanyResponse{
+	resp := entity.Company{
 		Id:        c.Id,
 		Name:      c.Name,
 		LegalName: c.LegalName,
@@ -139,89 +133,82 @@ func (s *CompanyService) FindById(reqId uuid.UUID) (response.CompanyResponse, er
 		Currency:  c.Currency,
 		CreatedAt: c.CreatedAt,
 		UpdatedAt: c.UpdatedAt,
-
 	}
 
 	return resp, nil
 }
 
-func (s *CompanyService) FindMyCompanies(userId uuid.UUID) ([]response.MyCompanyResponse, error) {
-	entities, err := s.ICompanyRepository.FindMyCompanies(userId)
+func (s *CompanyService) FindMyCompanies(userId uuid.UUID) ([]entity.Company, error) {
+	companies, err := s.ICompanyRepository.FindMyCompanies(userId)
 	if err != nil {
 		return nil, err
 	}
 
-	resps := make([]response.MyCompanyResponse, 0, len(entities))
-	for _, m := range entities {
-		c := m.Company
-		resps = append(resps, response.MyCompanyResponse{
-			CompanyResponse: response.CompanyResponse{
-				Id:        c.Id,
-				Name:      c.Name,
-				LegalName: c.LegalName,
-				TaxID:     c.TaxID,
-				Address:   c.Address,
-				Phone:     c.Phone,
-				Email:     c.Email,
-				Industry:  c.Industry,
-				Currency:  c.Currency,
-				CreatedBy: c.CreatedBy,
-				CreatedAt: c.CreatedAt,
-				UpdatedAt: c.UpdatedAt,
+	results := make([]entity.Company, 0, len(companies))
 
-			},
-			Role: m.Role,
+	for _, myCompany := range companies {
+		company := myCompany.Company
+
+		results = append(results, entity.Company{
+			Id:        company.Id,
+			Name:      company.Name,
+			LegalName: company.LegalName,
+			TaxID:     company.TaxID,
+			Address:   company.Address,
+			Phone:     company.Phone,
+			Email:     company.Email,
+			Industry:  company.Industry,
+			Currency:  company.Currency,
+			CreatedBy: company.CreatedBy,
+			CreatedAt: company.CreatedAt,
+			UpdatedAt: company.UpdatedAt,
 		})
 	}
-	return resps, nil
+
+	return results, nil
 
 }
 
-func (s *CompanyService) FindMembersByCompany(companyId uuid.UUID) ([]response.CompanyMemberResponse, error) {
-	entities, err := s.ICompanyRepository.FindMembersByCompany(companyId)
+func (s *CompanyService) FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error) {
+	companies, err := s.ICompanyRepository.FindMembersByCompany(companyID)
 	if err != nil {
 		return nil, err
 	}
 
-	resps := make([]response.CompanyMemberResponse, 0, len(entities))
-	for _, m := range entities {
-		resps = append(resps, response.CompanyMemberResponse{
-			Id:        m.Id,
-			CompanyId: m.CompanyId,
-			UserId:    m.UserId,
-			Username:  m.User.Username,
-			Name:      m.User.Name,
-			Email:     m.User.Email,
-			Role:      m.Role,
-			CreatedAt: m.JoinedAt,
-			UpdatedAt: m.UpdatedAt,
-			Company: response.CompanyResponse{
-				Id:        m.Company.Id,
-				Name:      m.Company.Name,
-				LegalName: m.Company.LegalName,
-				TaxID:     m.Company.TaxID,
-				Address:   m.Company.Address,
-				Phone:     m.Company.Phone,
-				Email:     m.Company.Email,
-				Industry:  m.Company.Industry,
-				Currency:  m.Company.Currency,
-				CreatedBy: m.Company.CreatedBy,
-				CreatedAt: m.Company.CreatedAt,
-				UpdatedAt: m.Company.UpdatedAt,
-
+	results := make([]entity.CompanyMember, 0, len(companies))
+	for _, member := range companies {
+		results = append(results, entity.CompanyMember{
+			Id:        member.Id,
+			CompanyId: member.CompanyId,
+			UserId:    member.UserId,
+			Role:      member.Role,
+			UpdatedAt: member.UpdatedAt,
+			Company: entity.Company{
+				Id:        member.Company.Id,
+				Name:      member.Company.Name,
+				LegalName: member.Company.LegalName,
+				TaxID:     member.Company.TaxID,
+				Address:   member.Company.Address,
+				Phone:     member.Company.Phone,
+				Email:     member.Company.Email,
+				Industry:  member.Company.Industry,
+				Currency:  member.Company.Currency,
+				CreatedBy: member.Company.CreatedBy,
+				CreatedAt: member.Company.CreatedAt,
+				UpdatedAt: member.Company.UpdatedAt,
 			},
 		})
 	}
-	return resps, nil
+	return results, nil
 }
 
-func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy uuid.UUID) (response.CompanyMemberResponse, error) {
+func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy uuid.UUID) (entity.CompanyMember, error) {
 	if err := s.validate.Struct(req); err != nil {
-		return response.CompanyMemberResponse{}, err
+		return entity.CompanyMember{}, err
 	}
 
 	if req.Role == "owner" {
-		return response.CompanyMemberResponse{}, errors.New("cannot assign owner role. A company can only have one owner")
+		return entity.CompanyMember{}, errors.New("cannot assign owner role. A company can only have one owner")
 	}
 
 	member := entity.CompanyMember{
@@ -233,20 +220,16 @@ func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy
 
 	created, err := s.ICompanyRepository.AssignMember(member)
 	if err != nil {
-		return response.CompanyMemberResponse{}, err
+		return entity.CompanyMember{}, err
 	}
 
-	return response.CompanyMemberResponse{
+	return entity.CompanyMember{
 		Id:        created.Id,
 		CompanyId: created.CompanyId,
 		UserId:    created.UserId,
-		Username:  created.User.Username,
-		Name:      created.User.Name,
-		Email:     created.User.Email,
 		Role:      created.Role,
-		CreatedAt: created.JoinedAt,
 		UpdatedAt: created.UpdatedAt,
-		Company: response.CompanyResponse{
+		Company: entity.Company{
 			Id:        created.Company.Id,
 			Name:      created.Company.Name,
 			LegalName: created.Company.LegalName,
@@ -259,7 +242,6 @@ func (s *CompanyService) AssignMember(req request.AssignMemberRequest, invitedBy
 			CreatedBy: created.Company.CreatedBy,
 			CreatedAt: created.Company.CreatedAt,
 			UpdatedAt: created.Company.UpdatedAt,
-
 		},
 	}, nil
 }
@@ -268,7 +250,7 @@ func (s *CompanyService) UpdateMemberRole(req request.UpdateMemberRoleRequest) e
 	if err := s.validate.Struct(req); err != nil {
 		return err
 	}
-	
+
 	if req.Role == "owner" {
 		return errors.New("cannot assign owner role. A company can only have one owner")
 	}
@@ -285,8 +267,8 @@ func (s *CompanyService) UpdateMemberRole(req request.UpdateMemberRoleRequest) e
 	return s.ICompanyRepository.UpdateMemberRole(req.CompanyId, req.UserID, req.Role)
 }
 
-func (s *CompanyService) RemoveMember(companyId uuid.UUID, userId uuid.UUID) error {
-	member, err := s.ICompanyRepository.FindMember(context.Background(), companyId, userId)
+func (s *CompanyService) RemoveMember(companyID uuid.UUID, userId uuid.UUID) error {
+	member, err := s.ICompanyRepository.FindMember(context.Background(), companyID, userId)
 	if err != nil {
 		return err
 	}
@@ -295,139 +277,114 @@ func (s *CompanyService) RemoveMember(companyId uuid.UUID, userId uuid.UUID) err
 		return errors.New("cannot remove the company owner")
 	}
 
-	return s.ICompanyRepository.RemoveMember(companyId, userId)
+	return s.ICompanyRepository.RemoveMember(companyID, userId)
 }
 
-func (s *CompanyService) Update(req request.CompanyUpdateRequest) (response.CompanyResponse, error) {
-	var c entity.Company
+func (s *CompanyService) Update(req request.CompanyUpdateRequest) (entity.Company, error) {
+	var company entity.Company
 	err := s.ICompanyRepository.WithTransaction(func(txRepo repository.ICompanyRepository) error {
 		var err error
-		c, err = txRepo.FindById(req.Id)
+		company, err = txRepo.FindById(req.Id)
 		if err != nil {
 			return err
 		}
 
-		c.Name = req.Name
-		c.LegalName = req.LegalName
-		c.TaxID = req.TaxID
-		c.Address = req.Address
-		c.Phone = req.Phone
-		c.Email = req.Email
-		c.Industry = req.Industry
-		c.Currency = req.Currency
+		company.Name = req.Name
+		company.LegalName = req.LegalName
+		company.TaxID = req.TaxID
+		company.Address = req.Address
+		company.Phone = req.Phone
+		company.Email = req.Email
+		company.Industry = req.Industry
+		company.Currency = req.Currency
 
-		if err := txRepo.Update(c); err != nil {
+		if err := txRepo.Update(company); err != nil {
 			return err
 		}
 		return nil
 	})
 
 	if err != nil {
-		return response.CompanyResponse{}, err
+		return entity.Company{}, err
 	}
 
-	return response.CompanyResponse{
-		Id:        c.Id,
-		Name:      c.Name,
-		LegalName: c.LegalName,
-		TaxID:     c.TaxID,
-		Address:   c.Address,
-		Phone:     c.Phone,
-		Email:     c.Email,
-		Industry:  c.Industry,
-		Currency:  c.Currency,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-
+	return entity.Company{
+		Id:        company.Id,
+		Name:      company.Name,
+		LegalName: company.LegalName,
+		TaxID:     company.TaxID,
+		Address:   company.Address,
+		Phone:     company.Phone,
+		Email:     company.Email,
+		Industry:  company.Industry,
+		Currency:  company.Currency,
+		CreatedAt: company.CreatedAt,
+		UpdatedAt: company.UpdatedAt,
 	}, nil
 }
 
-func (s *CompanyService) Delete(reqId uuid.UUID) (response.CompanyResponse, error) {
-	c, err := s.ICompanyRepository.FindById(reqId)
-	if err != nil {
-		return response.CompanyResponse{}, err
-	}
-
-	if err := s.ICompanyRepository.Delete(reqId); err != nil {
-		return response.CompanyResponse{}, err
-	}
-
-	return response.CompanyResponse{
-		Id:        c.Id,
-		Name:      c.Name,
-		LegalName: c.LegalName,
-		TaxID:     c.TaxID,
-		Address:   c.Address,
-		Phone:     c.Phone,
-		Email:     c.Email,
-		Industry:  c.Industry,
-		Currency:  c.Currency,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-
-	}, nil
+func (s *CompanyService) Delete(reqId uuid.UUID) error {
+	return s.ICompanyRepository.Delete(reqId)
 }
 
-func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (response.CompanyResponse, error) {
+func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (entity.Company, error) {
 	_, err := s.ICompanyRepository.FindMember(context.Background(), companyID, userID)
 	if err != nil {
-		return response.CompanyResponse{}, errors.New("you are not a member of this company")
+		return entity.Company{}, errors.New("you are not a member of this company")
 	}
 
-	c, err := s.ICompanyRepository.FindById(companyID)
+	company, err := s.ICompanyRepository.FindById(companyID)
 	if err != nil {
-		return response.CompanyResponse{}, errors.New("company not found")
+		return entity.Company{}, errors.New("company not found")
 	}
 
 	if err := s.ITokenRepository.SetActiveCompany(sessionID, companyID); err != nil {
-		return response.CompanyResponse{}, errors.New("failed to set active company")
+		return entity.Company{}, errors.New("failed to set active company")
 	}
 
-	return response.CompanyResponse{
-		Id:        c.Id,
-		Name:      c.Name,
-		LegalName: c.LegalName,
-		TaxID:     c.TaxID,
-		Address:   c.Address,
-		Phone:     c.Phone,
-		Email:     c.Email,
-		Industry:  c.Industry,
-		Currency:  c.Currency,
-		CreatedBy: c.CreatedBy,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-
+	return entity.Company{
+		Id:        company.Id,
+		Name:      company.Name,
+		LegalName: company.LegalName,
+		TaxID:     company.TaxID,
+		Address:   company.Address,
+		Phone:     company.Phone,
+		Email:     company.Email,
+		Industry:  company.Industry,
+		Currency:  company.Currency,
+		CreatedBy: company.CreatedBy,
+		CreatedAt: company.CreatedAt,
+		UpdatedAt: company.UpdatedAt,
 	}, nil
 }
 
-func (s *CompanyService) GetActiveCompany(sessionID uuid.UUID) (response.CompanyResponse, error) {
+func (s *CompanyService) GetActiveCompany(sessionID uuid.UUID) (entity.Company, error) {
 	companyID, err := s.ITokenRepository.GetActiveCompany(sessionID)
 	if err != nil {
-		return response.CompanyResponse{}, errors.New("failed to retrieve session")
+		return entity.Company{}, errors.New("failed to retrieve session")
 	}
 	if companyID == nil {
-		return response.CompanyResponse{}, errors.New("no active company selected")
+		return entity.Company{}, errors.New("no active company selected")
 	}
 
-	c, err := s.ICompanyRepository.FindById(*companyID)
+	company, err := s.ICompanyRepository.FindById(*companyID)
 	if err != nil {
-		return response.CompanyResponse{}, errors.New("active company not found")
+		return entity.Company{}, errors.New("active company not found")
 	}
 
-	return response.CompanyResponse{
-		Id:        c.Id,
-		Name:      c.Name,
-		LegalName: c.LegalName,
-		TaxID:     c.TaxID,
-		Address:   c.Address,
-		Phone:     c.Phone,
-		Email:     c.Email,
-		Industry:  c.Industry,
-		Currency:  c.Currency,
-		CreatedBy: c.CreatedBy,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-
+	return entity.Company{
+		Id:        company.Id,
+		Name:      company.Name,
+		LegalName: company.LegalName,
+		TaxID:     company.TaxID,
+		Address:   company.Address,
+		Phone:     company.Phone,
+		Email:     company.Email,
+		Industry:  company.Industry,
+		Currency:  company.Currency,
+		CreatedBy: company.CreatedBy,
+		CreatedAt: company.CreatedAt,
+		UpdatedAt: company.UpdatedAt,
 	}, nil
 }
 
@@ -437,4 +394,3 @@ func (s *CompanyService) Destroy(ids []uuid.UUID) error {
 	}
 	return s.ICompanyRepository.BulkDestroy(ids)
 }
-

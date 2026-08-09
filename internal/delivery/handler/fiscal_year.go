@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
+	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/service"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
 	"github.com/gofiber/fiber/v3"
@@ -10,11 +11,11 @@ import (
 )
 
 type FiscalYearHandler struct {
-	Service service.IFiscalYearService
+	IFiscalYearService service.IFiscalYearService
 }
 
 func NewFiscalYearHandler(serv service.IFiscalYearService) *FiscalYearHandler {
-	return &FiscalYearHandler{Service: serv}
+	return &FiscalYearHandler{IFiscalYearService: serv}
 }
 
 func (h *FiscalYearHandler) Create(ctx fiber.Ctx) error {
@@ -24,17 +25,25 @@ func (h *FiscalYearHandler) Create(ctx fiber.Ctx) error {
 		return nil
 	}
 
-	var req request.FiscalYearCreateRequest
+	req := request.FiscalYearCreateRequest{}
 	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.Service.Create(companyID, req)
+	result, err := h.IFiscalYearService.Create(companyID, req)
 	if err != nil {
-		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
+			Message: err.Error(),
+		})
 	}
-	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{Status: fiber.StatusCreated, Message: "Fiscal Year created", Data: result})
+
+	return ctx.Status(fiber.StatusCreated).JSON(response.JSON{
+		Status:  fiber.StatusCreated,
+		Message: "A new record has been stored.",
+		Data:    result,
+	})
 }
 
 func (h *FiscalYearHandler) FindAll(ctx fiber.Ctx) error {
@@ -43,14 +52,32 @@ func (h *FiscalYearHandler) FindAll(ctx fiber.Ctx) error {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
-	qp := util.ParseQueryParams(ctx, []string{"name"})
-	entities, totalCount, err := h.Service.FindAll(companyID, qp)
+
+	var entity = entity.FiscalYear{}
+	qp := util.ParseQueryParams(ctx, entity.SearchableFields())
+	results, totalCount, err := h.IFiscalYearService.FindAll(companyID, qp)
 	if err != nil {
-		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{Status: fiber.StatusInternalServerError, Message: "Failed to retrieve records", Errors: err.Error()})
+		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
+			Status:  fiber.StatusInternalServerError,
+			Message: "Failed to retrieve records",
+			Errors:  err.Error(),
+		})
 	}
+	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
+		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+			Status:  fiber.StatusOK,
+			Message: "No records found.",
+		})
+	}
+
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Success", Data: entities, Meta: &meta})
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Successfully retrieved all records.",
+		Data:    results,
+		Meta:    &meta,
+	})
 }
 
 func (h *FiscalYearHandler) FindById(ctx fiber.Ctx) error {
@@ -59,16 +86,26 @@ func (h *FiscalYearHandler) FindById(ctx fiber.Ctx) error {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
+
 	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
-	result, err := h.Service.FindById(companyID, id)
+
+	result, err := h.IFiscalYearService.FindById(companyID, id)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{Status: fiber.StatusNotFound, Message: err.Error()})
+		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
+			Status:  fiber.StatusNotFound,
+			Message: err.Error(),
+		})
 	}
-	return ctx.Status(fiber.StatusOK).JSON(response.JSON{Status: fiber.StatusOK, Message: "Success", Data: result})
+
+	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
+		Status:  fiber.StatusOK,
+		Message: "Successfully retrieved selected record.",
+		Data:    result,
+	})
 }
 
 func (h *FiscalYearHandler) Activate(ctx fiber.Ctx) error {
@@ -82,7 +119,7 @@ func (h *FiscalYearHandler) Activate(ctx fiber.Ctx) error {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
-	result, err := h.Service.Activate(companyID, id)
+	result, err := h.IFiscalYearService.Activate(companyID, id)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}
@@ -110,7 +147,7 @@ func (h *FiscalYearHandler) ClosePeriod(ctx fiber.Ctx) error {
 		return nil
 	}
 
-	result, err := h.Service.ClosePeriod(companyID, periodId, userID, req)
+	result, err := h.IFiscalYearService.ClosePeriod(companyID, periodId, userID, req)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{Status: fiber.StatusBadRequest, Message: err.Error()})
 	}

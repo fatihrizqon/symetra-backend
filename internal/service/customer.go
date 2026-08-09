@@ -4,33 +4,41 @@ import (
 	"errors"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
+	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 )
 
 type ICustomerService interface {
-	Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error)
-	FindById(companyId, id uuid.UUID) (response.CustomerResponse, error)
-	Update(companyId, id uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error)
-	Delete(companyId, id uuid.UUID) error
-	Destroy(companyId uuid.UUID, ids []uuid.UUID) error
+	Create(companyID uuid.UUID, req request.CustomerCreateRequest) (entity.Customer, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error)
+	FindById(companyID, id uuid.UUID) (entity.Customer, error)
+	Update(companyID uuid.UUID, req request.CustomerUpdateRequest) (entity.Customer, error)
+	Delete(companyID uuid.UUID, id uuid.UUID) error
+	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type CustomerService struct {
-	repo repository.ICustomerRepository
+	validate            *validator.Validate
+	ICustomerRepository repository.ICustomerRepository
 }
 
-func NewCustomerService(repo repository.ICustomerRepository) ICustomerService {
-	return &CustomerService{repo: repo}
+func NewCustomerService(validate *validator.Validate, repo repository.ICustomerRepository) ICustomerService {
+	return &CustomerService{
+		validate:            validate,
+		ICustomerRepository: repo,
+	}
 }
 
-func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreateRequest) (response.CustomerResponse, error) {
+func (s *CustomerService) Create(companyID uuid.UUID, req request.CustomerCreateRequest) (entity.Customer, error) {
+	if err := s.validate.Struct(req); err != nil {
+		return entity.Customer{}, err
+	}
+
 	customer := entity.Customer{
-		CompanyId: companyId,
+		CompanyId: companyID,
 		Code:      req.Code,
 		Name:      req.Name,
 		Email:     req.Email,
@@ -39,11 +47,17 @@ func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreate
 		CoaId:     req.CoaId,
 		Status:    1,
 	}
-	if err := s.repo.Create(&customer); err != nil {
-		return response.CustomerResponse{}, err
+
+	if err := s.ICustomerRepository.Create(&customer); err != nil {
+		return entity.Customer{}, err
 	}
-	createdCustomer, _ := s.repo.FindById(companyId, customer.Id)
-		resp := response.CustomerResponse{
+
+	createdCustomer, err := s.ICustomerRepository.FindById(companyID, customer.Id)
+	if err != nil {
+		return entity.Customer{}, err
+	}
+
+	result := entity.Customer{
 		Id:        createdCustomer.Id,
 		CompanyId: createdCustomer.CompanyId,
 		Code:      createdCustomer.Code,
@@ -58,59 +72,68 @@ func (s *CustomerService) Create(companyId uuid.UUID, req request.CustomerCreate
 	}
 
 	if createdCustomer.Coa != nil {
-		resp.Coa = &response.COAResponse{
-			Id:            createdCustomer.Coa.Id,
-			Code:          createdCustomer.Coa.Code,
-			Name:          createdCustomer.Coa.Name,
-			IsContra:      createdCustomer.Coa.IsContra,
-			NormalBalance: createdCustomer.Coa.GetAbsoluteNormalBalance(),
+		result.Coa = &entity.COA{
+			Id:          createdCustomer.Coa.Id,
+			Code:        createdCustomer.Coa.Code,
+			Name:        createdCustomer.Coa.Name,
+			IsContra:    createdCustomer.Coa.IsContra,
+			ControlType: createdCustomer.Coa.ControlType,
+			Status:      createdCustomer.Coa.Status,
+			CreatedAt:   createdCustomer.Coa.CreatedAt,
+			UpdatedAt:   createdCustomer.Coa.UpdatedAt,
 		}
 	}
-	return resp, nil
+	return result, nil
 }
 
-func (s *CustomerService) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]response.CustomerResponse, int, error) {
-	customers, total, err := s.repo.FindAll(companyId, qp)
+func (s *CustomerService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error) {
+	customers, totalCount, err := s.ICustomerRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-		resps := make([]response.CustomerResponse, 0, len(customers))
-	for _, v := range customers {
-	resp := response.CustomerResponse{
-				Id:        v.Id,
-				CompanyId: v.CompanyId,
-				Code:      v.Code,
-				Name:      v.Name,
-				Email:     v.Email,
-				Phone:     v.Phone,
-				Address:   v.Address,
-				CoaId:     v.CoaId,
-				Status:    v.Status,
-				CreatedAt: v.CreatedAt,
-				UpdatedAt: v.UpdatedAt,
+	if totalCount == 0 {
+		return []entity.Customer{}, 0, nil
+	}
+	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
+	if qp.Page > totalPages {
+		return nil, totalCount, nil
+	}
+	results := make([]entity.Customer, 0, len(customers))
+	for _, customer := range customers {
+		result := entity.Customer{
+			Id:        customer.Id,
+			CompanyId: customer.CompanyId,
+			Code:      customer.Code,
+			Name:      customer.Name,
+			Email:     customer.Email,
+			Phone:     customer.Phone,
+			Address:   customer.Address,
+			CoaId:     customer.CoaId,
+			Status:    customer.Status,
+			CreatedAt: customer.CreatedAt,
+			UpdatedAt: customer.UpdatedAt,
+		}
+
+		if customer.Coa != nil {
+			result.Coa = &entity.COA{
+				Id:       customer.Coa.Id,
+				Code:     customer.Coa.Code,
+				Name:     customer.Coa.Name,
+				IsContra: customer.Coa.IsContra,
 			}
-		
-			if v.Coa != nil {
-				resp.Coa = &response.COAResponse{
-					Id:            v.Coa.Id,
-					Code:          v.Coa.Code,
-					Name:          v.Coa.Name,
-					IsContra:      v.Coa.IsContra,
-					NormalBalance: v.Coa.GetAbsoluteNormalBalance(),
-				}
-			}
-		resps = append(resps, resp)
+		}
+		results = append(results, result)
 	}
 
-	return resps, int(total), nil
+	return results, totalCount, nil
 }
 
-func (s *CustomerService) FindById(companyId, id uuid.UUID) (response.CustomerResponse, error) {
-	customer, err := s.repo.FindById(companyId, id)
+func (s *CustomerService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Customer, error) {
+	customer, err := s.ICustomerRepository.FindById(companyID, id)
 	if err != nil {
-		return response.CustomerResponse{}, errors.New("customer not found")
+		return entity.Customer{}, errors.New("customer not found")
 	}
-		resp := response.CustomerResponse{
+	result := entity.Customer{
 		Id:        customer.Id,
 		CompanyId: customer.CompanyId,
 		Code:      customer.Code,
@@ -125,21 +148,20 @@ func (s *CustomerService) FindById(companyId, id uuid.UUID) (response.CustomerRe
 	}
 
 	if customer.Coa != nil {
-		resp.Coa = &response.COAResponse{
-			Id:            customer.Coa.Id,
-			Code:          customer.Coa.Code,
-			Name:          customer.Coa.Name,
-			IsContra:      customer.Coa.IsContra,
-			NormalBalance: customer.Coa.GetAbsoluteNormalBalance(),
+		result.Coa = &entity.COA{
+			Id:       customer.Coa.Id,
+			Code:     customer.Coa.Code,
+			Name:     customer.Coa.Name,
+			IsContra: customer.Coa.IsContra,
 		}
 	}
-	return resp, nil
+	return result, nil
 }
 
-func (s *CustomerService) Update(companyId, id uuid.UUID, req request.CustomerUpdateRequest) (response.CustomerResponse, error) {
-	customer, err := s.repo.FindById(companyId, id)
+func (s *CustomerService) Update(companyID uuid.UUID, req request.CustomerUpdateRequest) (entity.Customer, error) {
+	customer, err := s.ICustomerRepository.FindById(companyID, req.Id)
 	if err != nil {
-		return response.CustomerResponse{}, errors.New("customer not found")
+		return entity.Customer{}, errors.New("customer not found")
 	}
 
 	customer.Code = req.Code
@@ -149,11 +171,12 @@ func (s *CustomerService) Update(companyId, id uuid.UUID, req request.CustomerUp
 	customer.Address = req.Address
 	customer.CoaId = req.CoaId
 
-	if err := s.repo.Update(&customer); err != nil {
-		return response.CustomerResponse{}, err
+	if err := s.ICustomerRepository.Update(&customer); err != nil {
+		return entity.Customer{}, err
 	}
-	updatedCustomer, _ := s.repo.FindById(companyId, customer.Id)
-		resp := response.CustomerResponse{
+
+	updatedCustomer, _ := s.ICustomerRepository.FindById(companyID, customer.Id)
+	result := entity.Customer{
 		Id:        updatedCustomer.Id,
 		CompanyId: updatedCustomer.CompanyId,
 		Code:      updatedCustomer.Code,
@@ -166,26 +189,16 @@ func (s *CustomerService) Update(companyId, id uuid.UUID, req request.CustomerUp
 		CreatedAt: updatedCustomer.CreatedAt,
 		UpdatedAt: updatedCustomer.UpdatedAt,
 	}
-
-	if updatedCustomer.Coa != nil {
-		resp.Coa = &response.COAResponse{
-			Id:            updatedCustomer.Coa.Id,
-			Code:          updatedCustomer.Coa.Code,
-			Name:          updatedCustomer.Coa.Name,
-			IsContra:      updatedCustomer.Coa.IsContra,
-			NormalBalance: updatedCustomer.Coa.GetAbsoluteNormalBalance(),
-		}
-	}
-	return resp, nil
+	return result, nil
 }
 
-func (s *CustomerService) Delete(companyId, id uuid.UUID) error {
-	return s.repo.Delete(companyId, id)
+func (s *CustomerService) Delete(companyID uuid.UUID, id uuid.UUID) error {
+	return s.ICustomerRepository.Delete(companyID, id)
 }
 
-func (s *CustomerService) Destroy(companyId uuid.UUID, ids []uuid.UUID) error {
+func (s *CustomerService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
 	if len(ids) == 0 {
 		return errors.New("no ids provided")
 	}
-	return s.repo.BulkDestroy(companyId, ids)
+	return s.ICustomerRepository.BulkDestroy(companyID, ids)
 }

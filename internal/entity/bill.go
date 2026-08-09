@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func (Bill) TableName() string { return "bills" }
 
 type BillStatus string
 
@@ -51,4 +54,10 @@ type Bill struct {
 	Payments []BillPayment `gorm:"foreignKey:BillId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"payments"`
 }
 
-func (Bill) TableName() string { return "bills" }
+func (Bill) SearchableFields() []string {
+	return []string{"notes"}
+}
+
+func (Bill) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
+}

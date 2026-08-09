@@ -11,11 +11,11 @@ import (
 
 type ICustomerRepository interface {
 	Create(customer *entity.Customer) error
-	FindById(companyId, id uuid.UUID) (entity.Customer, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int64, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.Customer, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error)
 	Update(customer *entity.Customer) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
+	Delete(companyID uuid.UUID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type CustomerRepository struct {
@@ -30,10 +30,10 @@ func (r *CustomerRepository) Create(customer *entity.Customer) error {
 	return r.db.Create(customer).Error
 }
 
-func (r *CustomerRepository) FindById(companyId, id uuid.UUID) (entity.Customer, error) {
+func (r *CustomerRepository) FindById(companyID, id uuid.UUID) (entity.Customer, error) {
 	var customer entity.Customer
 	err := r.db.Preload("Coa").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&customer).Error
 	return customer, err
 }
@@ -45,17 +45,18 @@ var customerSortColumns = map[string]string{
 	"updated_at": "customers.updated_at",
 }
 
-func (r *CustomerRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int64, error) {
+func (r *CustomerRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Customer, int, error) {
 	var customers []entity.Customer
-	var total int64
-	query := r.db.Model(&entity.Customer{}).Where("company_id = ?", companyId)
+	var totalCount int64
+
+	query := r.db.Model(&entity.Customer{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
 		query = query.Where("code ILIKE ? OR name ILIKE ? OR email ILIKE ?", searchLike, searchLike, searchLike)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -74,17 +75,17 @@ func (r *CustomerRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) 
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Coa").Find(&customers).Error
-	return customers, total, err
+	return customers, int(totalCount), err
 }
 
 func (r *CustomerRepository) Update(customer *entity.Customer) error {
 	return r.db.Save(customer).Error
 }
 
-func (r *CustomerRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ?", id, companyId).Delete(&entity.Customer{}).Error
+func (r *CustomerRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ?", id, companyID).Delete(&entity.Customer{}).Error
 }
 
-func (r *CustomerRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ?", companyId, ids).Delete(&entity.Customer{}).Error
+func (r *CustomerRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ?", companyID, ids).Delete(&entity.Customer{}).Error
 }

@@ -11,14 +11,14 @@ import (
 
 type IInvoiceRepository interface {
 	Create(invoice *entity.Invoice) error
-	FindById(companyId, id uuid.UUID) (entity.Invoice, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error)
+	FindById(companyID, id uuid.UUID) (entity.Invoice, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error)
 	Update(invoice *entity.Invoice) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
-	UpdateStatus(companyId, id uuid.UUID, status entity.InvoiceStatus, journalEntryId *uuid.UUID) error
+	Delete(companyID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
+	UpdateStatus(companyID, id uuid.UUID, status entity.InvoiceStatus, journalEntryId *uuid.UUID) error
 	AddPayment(payment *entity.InvoicePayment) error
-	UpdatePaymentStatus(companyId, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error
+	UpdatePaymentStatus(companyID, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error
 }
 
 type InvoiceRepository struct {
@@ -35,10 +35,10 @@ func (r *InvoiceRepository) Create(invoice *entity.Invoice) error {
 	})
 }
 
-func (r *InvoiceRepository) FindById(companyId, id uuid.UUID) (entity.Invoice, error) {
+func (r *InvoiceRepository) FindById(companyID, id uuid.UUID) (entity.Invoice, error) {
 	var invoice entity.Invoice
 	err := r.db.Preload("Customer").Preload("Items").Preload("Payments").Preload("Payments.PaymentAccount").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&invoice).Error
 	return invoice, err
 }
@@ -52,10 +52,10 @@ var invoiceSortColumns = map[string]string{
 	"updated_at":     "invoices.updated_at",
 }
 
-func (r *InvoiceRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error) {
+func (r *InvoiceRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error) {
 	var invoices []entity.Invoice
 	var total int64
-	query := r.db.Model(&entity.Invoice{}).Where("company_id = ?", companyId)
+	query := r.db.Model(&entity.Invoice{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
@@ -97,15 +97,15 @@ func (r *InvoiceRepository) Update(invoice *entity.Invoice) error {
 	})
 }
 
-func (r *InvoiceRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ? AND invoice_status = ?", id, companyId, entity.InvoiceStatusDraft).Delete(&entity.Invoice{}).Error
+func (r *InvoiceRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ? AND invoice_status = ?", id, companyID, entity.InvoiceStatusDraft).Delete(&entity.Invoice{}).Error
 }
 
-func (r *InvoiceRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ? AND invoice_status = ?", companyId, ids, entity.InvoiceStatusDraft).Delete(&entity.Invoice{}).Error
+func (r *InvoiceRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ? AND invoice_status = ?", companyID, ids, entity.InvoiceStatusDraft).Delete(&entity.Invoice{}).Error
 }
 
-func (r *InvoiceRepository) UpdateStatus(companyId, id uuid.UUID, status entity.InvoiceStatus, journalEntryId *uuid.UUID) error {
+func (r *InvoiceRepository) UpdateStatus(companyID, id uuid.UUID, status entity.InvoiceStatus, journalEntryId *uuid.UUID) error {
 	updates := map[string]interface{}{
 		"invoice_status": status,
 	}
@@ -113,7 +113,7 @@ func (r *InvoiceRepository) UpdateStatus(companyId, id uuid.UUID, status entity.
 		updates["journal_entry_id"] = *journalEntryId
 	}
 	return r.db.Model(&entity.Invoice{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Updates(updates).Error
 }
 
@@ -121,9 +121,9 @@ func (r *InvoiceRepository) AddPayment(payment *entity.InvoicePayment) error {
 	return r.db.Create(payment).Error
 }
 
-func (r *InvoiceRepository) UpdatePaymentStatus(companyId, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error {
+func (r *InvoiceRepository) UpdatePaymentStatus(companyID, id uuid.UUID, amountPaid float64, status entity.PaymentStatus) error {
 	return r.db.Model(&entity.Invoice{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Updates(map[string]interface{}{
 			"amount_paid":    amountPaid,
 			"amount_due":     gorm.Expr("grand_total - ?", amountPaid),

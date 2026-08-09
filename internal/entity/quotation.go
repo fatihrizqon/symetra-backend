@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func (Quotation) TableName() string { return "quotations" }
 
 type QuotationStatus string
 
@@ -39,4 +42,10 @@ type Quotation struct {
 	Items []QuotationItem `gorm:"foreignKey:QuotationId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"items"`
 }
 
-func (Quotation) TableName() string { return "quotations" }
+func (Quotation) SearchableFields() []string {
+	return []string{"quotation_number", "notes"}
+}
+
+func (Quotation) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
+}

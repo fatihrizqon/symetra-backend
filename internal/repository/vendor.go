@@ -11,11 +11,11 @@ import (
 
 type IVendorRepository interface {
 	Create(vendor *entity.Vendor) error
-	FindById(companyId, id uuid.UUID) (entity.Vendor, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error)
+	FindById(companyID, id uuid.UUID) (entity.Vendor, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error)
 	Update(vendor *entity.Vendor) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
+	Delete(companyID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type VendorRepository struct {
@@ -30,10 +30,10 @@ func (r *VendorRepository) Create(vendor *entity.Vendor) error {
 	return r.db.Create(vendor).Error
 }
 
-func (r *VendorRepository) FindById(companyId, id uuid.UUID) (entity.Vendor, error) {
+func (r *VendorRepository) FindById(companyID, id uuid.UUID) (entity.Vendor, error) {
 	var vendor entity.Vendor
 	err := r.db.Preload("Coa").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&vendor).Error
 	return vendor, err
 }
@@ -45,10 +45,10 @@ var vendorSortColumns = map[string]string{
 	"updated_at": "vendors.updated_at",
 }
 
-func (r *VendorRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error) {
+func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error) {
 	var vendors []entity.Vendor
 	var total int64
-	query := r.db.Model(&entity.Vendor{}).Where("company_id = ?", companyId)
+	query := r.db.Model(&entity.Vendor{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
@@ -81,10 +81,10 @@ func (r *VendorRepository) Update(vendor *entity.Vendor) error {
 	return r.db.Save(vendor).Error
 }
 
-func (r *VendorRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ?", id, companyId).Delete(&entity.Vendor{}).Error
+func (r *VendorRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ?", id, companyID).Delete(&entity.Vendor{}).Error
 }
 
-func (r *VendorRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ?", companyId, ids).Delete(&entity.Vendor{}).Error
+func (r *VendorRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ?", companyID, ids).Delete(&entity.Vendor{}).Error
 }

@@ -2,6 +2,8 @@ package response
 
 import (
 	"time"
+
+	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/google/uuid"
 )
 
@@ -17,6 +19,24 @@ type BillItemResponse struct {
 	Account       *COAResponse `json:"account,omitempty"`
 }
 
+func NewBillItemResponse(e entity.BillItem) BillItemResponse {
+	resp := BillItemResponse{
+		Id:            e.Id,
+		Description:   e.Description,
+		Qty:           e.Qty,
+		Price:         e.Price,
+		Discount:      e.Discount,
+		TaxApplicable: e.TaxApplicable,
+		Amount:        e.Amount,
+		AccountId:     e.AccountId,
+	}
+	if e.Account != nil {
+		accountResp := NewCOAResponse(*e.Account)
+		resp.Account = &accountResp
+	}
+	return resp
+}
+
 type BillPaymentResponse struct {
 	Id               uuid.UUID    `json:"id"`
 	Amount           float64      `json:"amount"`
@@ -27,6 +47,24 @@ type BillPaymentResponse struct {
 	Notes            string       `json:"notes"`
 	CreatedBy        uuid.UUID    `json:"created_by"`
 	CreatedAt        time.Time    `json:"created_at"`
+}
+
+func NewBillPaymentResponse(e entity.BillPayment) BillPaymentResponse {
+	resp := BillPaymentResponse{
+		Id:               e.Id,
+		Amount:           e.Amount,
+		PaymentDate:      e.PaymentDate,
+		PaymentAccountId: e.PaymentAccountId,
+		JournalEntryId:   e.JournalEntryId,
+		Notes:            e.Notes,
+		CreatedBy:        e.CreatedBy,
+		CreatedAt:        e.CreatedAt,
+	}
+	if e.PaymentAccount != nil {
+		accountResp := NewCOAResponse(*e.PaymentAccount)
+		resp.PaymentAccount = &accountResp
+	}
+	return resp
 }
 
 type BillResponse struct {
@@ -57,4 +95,56 @@ type BillResponse struct {
 	Payments        []BillPaymentResponse `json:"payments,omitempty"`
 }
 
+func NewBillResponse(e entity.Bill) BillResponse {
+	resp := BillResponse{
+		Id:              e.Id,
+		CompanyId:       e.CompanyId,
+		BillNumber:      e.BillNumber,
+		PurchaseOrderId: e.PurchaseOrderId,
+		VendorId:        e.VendorId,
+		BillDate:        e.BillDate,
+		DueDate:         e.DueDate,
+		Subtotal:        e.Subtotal,
+		DiscountTotal:   e.DiscountTotal,
+		Dpp:             e.Dpp,
+		TaxRate:         e.TaxRate,
+		TaxAmount:       e.TaxAmount,
+		GrandTotal:      e.GrandTotal,
+		AmountPaid:      e.AmountPaid,
+		AmountDue:       e.AmountDue,
+		BillStatus:      string(e.BillStatus),
+		PaymentStatus:   string(e.PaymentStatus),
+		Notes:           e.Notes,
+		JournalEntryId:  e.JournalEntryId,
+		CreatedBy:       e.CreatedBy,
+		CreatedAt:       e.CreatedAt,
+		UpdatedAt:       e.UpdatedAt,
+	}
 
+	if e.Vendor != nil {
+		vendorResp := NewVendorResponse(*e.Vendor)
+		resp.Vendor = &vendorResp
+	}
+
+	var items []BillItemResponse
+	for _, item := range e.Items {
+		items = append(items, NewBillItemResponse(item))
+	}
+	resp.Items = items
+
+	var payments []BillPaymentResponse
+	for _, p := range e.Payments {
+		payments = append(payments, NewBillPaymentResponse(p))
+	}
+	resp.Payments = payments
+
+	return resp
+}
+
+func NewBillResponses(entities []entity.Bill) []BillResponse {
+	var responses = make([]BillResponse, 0, len(entities))
+	for _, e := range entities {
+		responses = append(responses, NewBillResponse(e))
+	}
+	return responses
+}

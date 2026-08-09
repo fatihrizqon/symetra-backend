@@ -4,7 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
+
+func (BillItem) TableName() string { return "bill_items" }
 
 type BillItem struct {
 	Id            uuid.UUID  `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
@@ -21,4 +24,10 @@ type BillItem struct {
 	UpdatedAt     time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
 }
 
-func (BillItem) TableName() string { return "bill_items" }
+func (BillItem) SearchableFields() []string {
+	return []string{"description"}
+}
+
+func (BillItem) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
+}

@@ -78,7 +78,7 @@ func create(user entity.User, sessionID uuid.UUID, secret []byte, duration time.
 	return token.SignedString(secret)
 }
 
-func GetAuthor(ctx fiber.Ctx) (uuid.UUID, error) {
+func GetAuthorID(ctx fiber.Ctx) (uuid.UUID, error) {
 	claims, ok := ctx.Locals("auth").(*Claims)
 	if !ok || claims == nil {
 		return uuid.Nil, fiber.ErrUnauthorized

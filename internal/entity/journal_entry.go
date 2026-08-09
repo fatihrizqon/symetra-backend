@@ -6,6 +6,8 @@ import (
 	"github.com/google/uuid"
 )
 
+func (JournalEntry) TableName() string { return "journal_entries" }
+
 type JournalEntryStatus string
 
 const (
@@ -45,7 +47,5 @@ type JournalEntry struct {
 	Lines []JournalLine `gorm:"foreignKey:JournalEntryId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"lines"`
 	Files []File        `gorm:"many2many:journal_entry_files;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"files,omitempty"`
 }
-
-func (JournalEntry) TableName() string { return "journal_entries" }
 
 func (JournalEntry) SearchableFields() []string { return []string{"journal_number", "description"} }

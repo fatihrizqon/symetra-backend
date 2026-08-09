@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
@@ -15,19 +14,22 @@ import (
 
 type IFiscalYearService interface {
 	Create(companyID uuid.UUID, req request.FiscalYearCreateRequest) (entity.FiscalYear, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.FiscalYearResponse, int, error)
-	FindById(companyID, id uuid.UUID) (response.FiscalYearResponse, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error)
+	FindById(companyID, id uuid.UUID) (entity.FiscalYear, error)
 	Activate(companyID, id uuid.UUID) (entity.FiscalYear, error)
 	ClosePeriod(companyID, periodId uuid.UUID, userID *uuid.UUID, req request.FiscalPeriodCloseRequest) (entity.FiscalPeriod, error)
 }
 
 type FiscalYearService struct {
-	Repo     repository.IFiscalYearRepository
-	validate *validator.Validate
+	validate              *validator.Validate
+	IFiscalYearRepository repository.IFiscalYearRepository
 }
 
-func NewFiscalYearService(repo repository.IFiscalYearRepository, validate *validator.Validate) IFiscalYearService {
-	return &FiscalYearService{Repo: repo, validate: validate}
+func NewFiscalYearService(validate *validator.Validate, repo repository.IFiscalYearRepository) IFiscalYearService {
+	return &FiscalYearService{
+		validate:              validate,
+		IFiscalYearRepository: repo,
+	}
 }
 
 func (s *FiscalYearService) Create(companyID uuid.UUID, req request.FiscalYearCreateRequest) (entity.FiscalYear, error) {
@@ -42,7 +44,7 @@ func (s *FiscalYearService) Create(companyID uuid.UUID, req request.FiscalYearCr
 		return entity.FiscalYear{}, fmt.Errorf("start_date must be before end_date")
 	}
 
-	fy := entity.FiscalYear{
+	fiscal_year := entity.FiscalYear{
 		CompanyId:  companyID,
 		Name:       req.Name,
 		StartDate:  startDate,
@@ -52,56 +54,117 @@ func (s *FiscalYearService) Create(companyID uuid.UUID, req request.FiscalYearCr
 	}
 
 	// Generate periods if monthly
-	if fy.PeriodType == "monthly" {
+	if fiscal_year.PeriodType == "monthly" {
 		periods := generateMonthlyPeriods(startDate, endDate)
-		fy.Periods = periods
+		fiscal_year.Periods = periods
 	}
 
-	return s.Repo.Create(fy)
+	return s.IFiscalYearRepository.Create(fiscal_year)
 }
 
-func (s *FiscalYearService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.FiscalYearResponse, int, error) {
-	entities, totalCount, err := s.Repo.FindAll(companyID, qp)
+func (s *FiscalYearService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error) {
+	fiscal_years, totalCount, err := s.IFiscalYearRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-	resps := make([]response.FiscalYearResponse, 0, len(entities))
-	for _, v := range entities {
-		resps = append(resps, mapFiscalYear(v))
+	results := make([]entity.FiscalYear, 0, len(fiscal_years))
+	for _, fiscal_year := range fiscal_years {
+		result := entity.FiscalYear{
+			Id:          fiscal_year.Id,
+			CompanyId:   fiscal_year.CompanyId,
+			Name:        fiscal_year.Name,
+			StartDate:   fiscal_year.StartDate,
+			EndDate:     fiscal_year.EndDate,
+			Status:      fiscal_year.Status,
+			PeriodType:  fiscal_year.PeriodType,
+			ClosingJEId: fiscal_year.ClosingJEId,
+			ClosedAt:    fiscal_year.ClosedAt,
+			CreatedAt:   fiscal_year.CreatedAt,
+			UpdatedAt:   fiscal_year.UpdatedAt,
+		}
+		if len(fiscal_year.Periods) > 0 {
+			var pResps []entity.FiscalPeriod
+			for _, period := range fiscal_year.Periods {
+				pResps = append(pResps, entity.FiscalPeriod{
+					Id:           period.Id,
+					FiscalYearId: period.FiscalYearId,
+					Name:         period.Name,
+					PeriodNumber: period.PeriodNumber,
+					StartDate:    period.StartDate,
+					EndDate:      period.EndDate,
+					Status:       period.Status,
+					CreatedAt:    period.CreatedAt,
+					UpdatedAt:    period.UpdatedAt,
+				})
+			}
+			result.Periods = pResps
+		}
+		results = append(results, result)
 	}
-	return resps, totalCount, nil
+	return results, totalCount, nil
 }
 
-func (s *FiscalYearService) FindById(companyID, id uuid.UUID) (response.FiscalYearResponse, error) {
-	ent, err := s.Repo.FindById(companyID, id)
+func (s *FiscalYearService) FindById(companyID, id uuid.UUID) (entity.FiscalYear, error) {
+	fiscal_year, err := s.IFiscalYearRepository.FindById(companyID, id)
 	if err != nil {
-		return response.FiscalYearResponse{}, err
+		return entity.FiscalYear{}, err
 	}
-	return mapFiscalYear(ent), nil
+
+	result := entity.FiscalYear{
+		Id:          fiscal_year.Id,
+		CompanyId:   fiscal_year.CompanyId,
+		Name:        fiscal_year.Name,
+		StartDate:   fiscal_year.StartDate,
+		EndDate:     fiscal_year.EndDate,
+		Status:      fiscal_year.Status,
+		PeriodType:  fiscal_year.PeriodType,
+		ClosingJEId: fiscal_year.ClosingJEId,
+		ClosedAt:    fiscal_year.ClosedAt,
+		CreatedAt:   fiscal_year.CreatedAt,
+		UpdatedAt:   fiscal_year.UpdatedAt,
+	}
+	if len(fiscal_year.Periods) > 0 {
+		var pResps []entity.FiscalPeriod
+		for _, period := range fiscal_year.Periods {
+			pResps = append(pResps, entity.FiscalPeriod{
+				Id:           period.Id,
+				FiscalYearId: period.FiscalYearId,
+				Name:         period.Name,
+				PeriodNumber: period.PeriodNumber,
+				StartDate:    period.StartDate,
+				EndDate:      period.EndDate,
+				Status:       period.Status,
+				CreatedAt:    period.CreatedAt,
+				UpdatedAt:    period.UpdatedAt,
+			})
+		}
+		result.Periods = pResps
+	}
+	return result, nil
 }
 
-func (s *FiscalYearService) Activate(companyID, id uuid.UUID) (entity.FiscalYear, error) {
+func (s *FiscalYearService) Activate(companyID uuid.UUID, id uuid.UUID) (entity.FiscalYear, error) {
 	// Check if any other is active
-	if activeFY, err := s.Repo.GetActive(companyID); err == nil {
+	if activeFY, err := s.IFiscalYearRepository.GetActive(companyID); err == nil {
 		return activeFY, fmt.Errorf("FISCAL_YEAR_ALREADY_ACTIVE")
 	}
 
-	fy, err := s.Repo.FindById(companyID, id)
+	fiscal_year, err := s.IFiscalYearRepository.FindById(companyID, id)
 	if err != nil {
-		return fy, err
-	}
-	
-	if fy.Status != entity.FiscalYearStatusDraft {
-		return fy, fmt.Errorf("INVALID_STATE_TRANSITION")
+		return fiscal_year, err
 	}
 
-	fy.Status = entity.FiscalYearStatusActive
-	err = s.Repo.Update(fy)
-	return fy, err
+	if fiscal_year.Status != entity.FiscalYearStatusDraft {
+		return fiscal_year, fmt.Errorf("INVALID_STATE_TRANSITION")
+	}
+
+	fiscal_year.Status = entity.FiscalYearStatusActive
+	err = s.IFiscalYearRepository.Update(fiscal_year)
+	return fiscal_year, err
 }
 
-func (s *FiscalYearService) ClosePeriod(companyID, periodId uuid.UUID, userID *uuid.UUID, req request.FiscalPeriodCloseRequest) (entity.FiscalPeriod, error) {
-	period, err := s.Repo.FindPeriodById(companyID, periodId)
+func (s *FiscalYearService) ClosePeriod(companyID uuid.UUID, periodId uuid.UUID, userID *uuid.UUID, req request.FiscalPeriodCloseRequest) (entity.FiscalPeriod, error) {
+	period, err := s.IFiscalYearRepository.FindPeriodById(companyID, periodId)
 	if err != nil {
 		return period, err
 	}
@@ -113,7 +176,7 @@ func (s *FiscalYearService) ClosePeriod(companyID, periodId uuid.UUID, userID *u
 	// Move to closed
 	oldStatus := string(period.Status)
 	period.Status = entity.FiscalPeriodStatusClosed
-	if err := s.Repo.UpdatePeriod(period); err != nil {
+	if err := s.IFiscalYearRepository.UpdatePeriod(period); err != nil {
 		return period, err
 	}
 
@@ -126,7 +189,7 @@ func (s *FiscalYearService) ClosePeriod(companyID, periodId uuid.UUID, userID *u
 		Reason:         req.Reason,
 		PerformedBy:    userID,
 	}
-	_ = s.Repo.LogPeriodAction(log)
+	_ = s.IFiscalYearRepository.LogPeriodAction(log)
 
 	return period, nil
 }
@@ -158,40 +221,4 @@ func generateMonthlyPeriods(start, end time.Time) []entity.FiscalPeriod {
 		periodNum++
 	}
 	return periods
-}
-
-func mapFiscalYear(v entity.FiscalYear) response.FiscalYearResponse {
-	resp := response.FiscalYearResponse{
-		Id:          v.Id,
-		CompanyId:   v.CompanyId,
-		Name:        v.Name,
-		StartDate:   v.StartDate.Format("2006-01-02"),
-		EndDate:     v.EndDate.Format("2006-01-02"),
-		Status:      string(v.Status),
-		PeriodType:  v.PeriodType,
-		ClosingJEId: v.ClosingJEId,
-		ClosedAt:    v.ClosedAt,
-		CreatedAt:   v.CreatedAt,
-		UpdatedAt:   v.UpdatedAt,
-	}
-	
-	if len(v.Periods) > 0 {
-		var pResps []response.FiscalPeriodResponse
-		for _, p := range v.Periods {
-			pResps = append(pResps, response.FiscalPeriodResponse{
-				Id:           p.Id,
-				FiscalYearId: p.FiscalYearId,
-				Name:         p.Name,
-				PeriodNumber: p.PeriodNumber,
-				StartDate:    p.StartDate.Format("2006-01-02"),
-				EndDate:      p.EndDate.Format("2006-01-02"),
-				Status:       string(p.Status),
-				CreatedAt:    p.CreatedAt,
-				UpdatedAt:    p.UpdatedAt,
-			})
-		}
-		resp.Periods = pResps
-	}
-	
-	return resp
 }

@@ -11,12 +11,12 @@ import (
 
 type IQuotationRepository interface {
 	Create(q *entity.Quotation) error
-	FindById(companyId, id uuid.UUID) (entity.Quotation, error)
-	FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error)
+	FindById(companyID, id uuid.UUID) (entity.Quotation, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error)
 	Update(q *entity.Quotation) error
-	Delete(companyId, id uuid.UUID) error
-	BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error
-	UpdateStatus(companyId, id uuid.UUID, status entity.QuotationStatus) error
+	Delete(companyID, id uuid.UUID) error
+	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
+	UpdateStatus(companyID, id uuid.UUID, status entity.QuotationStatus) error
 }
 
 type QuotationRepository struct {
@@ -33,10 +33,10 @@ func (r *QuotationRepository) Create(q *entity.Quotation) error {
 	})
 }
 
-func (r *QuotationRepository) FindById(companyId, id uuid.UUID) (entity.Quotation, error) {
+func (r *QuotationRepository) FindById(companyID, id uuid.UUID) (entity.Quotation, error) {
 	var q entity.Quotation
 	err := r.db.Preload("Customer").Preload("Items").
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		First(&q).Error
 	return q, err
 }
@@ -49,10 +49,10 @@ var quotationSortColumns = map[string]string{
 	"updated_at":       "quotations.updated_at",
 }
 
-func (r *QuotationRepository) FindAll(companyId uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error) {
+func (r *QuotationRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error) {
 	var qs []entity.Quotation
 	var total int64
-	query := r.db.Model(&entity.Quotation{}).Where("company_id = ?", companyId)
+	query := r.db.Model(&entity.Quotation{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
 		searchLike := "%" + qp.Search + "%"
@@ -94,16 +94,16 @@ func (r *QuotationRepository) Update(q *entity.Quotation) error {
 	})
 }
 
-func (r *QuotationRepository) Delete(companyId, id uuid.UUID) error {
-	return r.db.Where("id = ? AND company_id = ? AND status = ?", id, companyId, entity.QuotationStatusDraft).Delete(&entity.Quotation{}).Error
+func (r *QuotationRepository) Delete(companyID, id uuid.UUID) error {
+	return r.db.Where("id = ? AND company_id = ? AND status = ?", id, companyID, entity.QuotationStatusDraft).Delete(&entity.Quotation{}).Error
 }
 
-func (r *QuotationRepository) BulkDestroy(companyId uuid.UUID, ids []uuid.UUID) error {
-	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyId, ids, entity.QuotationStatusDraft).Delete(&entity.Quotation{}).Error
+func (r *QuotationRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error {
+	return r.db.Where("company_id = ? AND id IN ? AND status = ?", companyID, ids, entity.QuotationStatusDraft).Delete(&entity.Quotation{}).Error
 }
 
-func (r *QuotationRepository) UpdateStatus(companyId, id uuid.UUID, status entity.QuotationStatus) error {
+func (r *QuotationRepository) UpdateStatus(companyID, id uuid.UUID, status entity.QuotationStatus) error {
 	return r.db.Model(&entity.Quotation{}).
-		Where("id = ? AND company_id = ?", id, companyId).
+		Where("id = ? AND company_id = ?", id, companyID).
 		Update("status", status).Error
 }

@@ -14,117 +14,125 @@ import (
 
 type ICOASubGroupService interface {
 	Create(companyID uuid.UUID, req request.COASubGroupCreateRequest) (entity.COASubGroup, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COASubGroupResponse, int, error)
-	FindById(companyID, reqId uuid.UUID) (response.COASubGroupResponse, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error)
+	FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COASubGroup, error)
 	Update(companyID uuid.UUID, req request.COASubGroupUpdateRequest) (entity.COASubGroup, error)
-	Delete(companyID, reqId uuid.UUID) (entity.COASubGroup, error)
+	Delete(companyID uuid.UUID, reqId uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
 type COASubGroupService struct {
-	ICOASubGroupRepository repository.ICOASubGroupRepository
 	validate               *validator.Validate
+	ICOASubGroupRepository repository.ICOASubGroupRepository
 }
 
-func NewCOASubGroupService(repo repository.ICOASubGroupRepository, validate *validator.Validate) ICOASubGroupService {
-	return &COASubGroupService{ICOASubGroupRepository: repo, validate: validate}
+func NewCOASubGroupService(validate *validator.Validate, repo repository.ICOASubGroupRepository) ICOASubGroupService {
+	return &COASubGroupService{
+		validate:               validate,
+		ICOASubGroupRepository: repo,
+	}
 }
 
 func (s *COASubGroupService) Create(companyID uuid.UUID, req request.COASubGroupCreateRequest) (entity.COASubGroup, error) {
 	if err := s.validate.Struct(req); err != nil {
 		return entity.COASubGroup{}, err
 	}
-	sg := entity.COASubGroup{CompanyId: companyID, GroupId: req.GroupId, Code: req.Code, Name: req.Name}
-	return s.ICOASubGroupRepository.Create(sg)
+	coa_subgroup := entity.COASubGroup{CompanyId: companyID, GroupId: req.GroupId, Code: req.Code, Name: req.Name}
+	return s.ICOASubGroupRepository.Create(coa_subgroup)
 }
 
-func (s *COASubGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]response.COASubGroupResponse, int, error) {
-	entities, totalCount, err := s.ICOASubGroupRepository.FindAll(companyID, qp)
+func (s *COASubGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COASubGroup, int, error) {
+	coa_subgroups, totalCount, err := s.ICOASubGroupRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
 	if totalCount == 0 {
-		return []response.COASubGroupResponse{}, 0, nil
+		return []entity.COASubGroup{}, 0, nil
 	}
 	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
 	if qp.Page > totalPages {
 		return nil, totalCount, nil
 	}
-	resps := make([]response.COASubGroupResponse, 0, len(entities))
-	for _, v := range entities {
-		resps = append(resps, mapCOASubGroup(v))
+	results := make([]entity.COASubGroup, 0, len(coa_subgroups))
+	for _, coa_subgroup := range coa_subgroups {
+		result := entity.COASubGroup{
+			Id:        coa_subgroup.Id,
+			GroupId:   coa_subgroup.GroupId,
+			Code:      coa_subgroup.Code,
+			Name:      coa_subgroup.Name,
+			Status:    coa_subgroup.Status,
+			CreatedAt: coa_subgroup.CreatedAt,
+			UpdatedAt: coa_subgroup.UpdatedAt,
+		}
+		if coa_subgroup.Group != nil {
+			result.Group = &entity.COAGroup{
+				Id:        coa_subgroup.Group.Id,
+				Code:      coa_subgroup.Group.Code,
+				Name:      coa_subgroup.Group.Name,
+				Status:    coa_subgroup.Group.Status,
+				CreatedAt: coa_subgroup.Group.CreatedAt,
+				UpdatedAt: coa_subgroup.Group.UpdatedAt,
+			}
+		}
+		results = append(results, result)
 	}
-	return resps, totalCount, nil
+	return results, totalCount, nil
 }
 
-func (s *COASubGroupService) FindById(companyID, reqId uuid.UUID) (response.COASubGroupResponse, error) {
-	result, err := s.ICOASubGroupRepository.FindById(companyID, reqId)
+func (s *COASubGroupService) FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COASubGroup, error) {
+	coa_subgroup, err := s.ICOASubGroupRepository.FindById(companyID, reqId)
 	if err != nil {
-		return response.COASubGroupResponse{}, err
+		return entity.COASubGroup{}, err
 	}
-	return mapCOASubGroup(result), nil
+
+	r := entity.COASubGroup{
+		Id:        coa_subgroup.Id,
+		GroupId:   coa_subgroup.GroupId,
+		Code:      coa_subgroup.Code,
+		Name:      coa_subgroup.Name,
+		Status:    coa_subgroup.Status,
+		CreatedAt: coa_subgroup.CreatedAt,
+		UpdatedAt: coa_subgroup.UpdatedAt,
+	}
+	if coa_subgroup.Group != nil {
+		r.Group = &entity.COAGroup{
+			Id:        coa_subgroup.Group.Id,
+			Code:      coa_subgroup.Group.Code,
+			Name:      coa_subgroup.Group.Name,
+			Status:    coa_subgroup.Group.Status,
+			CreatedAt: coa_subgroup.Group.CreatedAt,
+			UpdatedAt: coa_subgroup.Group.UpdatedAt,
+		}
+	}
+	return r, nil
 }
 
 func (s *COASubGroupService) Update(companyID uuid.UUID, req request.COASubGroupUpdateRequest) (entity.COASubGroup, error) {
-	sg, err := s.ICOASubGroupRepository.FindById(companyID, req.Id)
+	coa_subgroup, err := s.ICOASubGroupRepository.FindById(companyID, req.Id)
 	if err != nil {
-		return sg, err
+		return coa_subgroup, err
 	}
-	sg.GroupId = req.GroupId
-	sg.Code = req.Code
-	sg.Name = req.Name
-	return sg, s.ICOASubGroupRepository.Update(sg)
+	coa_subgroup.GroupId = req.GroupId
+	coa_subgroup.Code = req.Code
+	coa_subgroup.Name = req.Name
+	return coa_subgroup, s.ICOASubGroupRepository.Update(coa_subgroup)
 }
 
-func (s *COASubGroupService) Delete(companyID, reqId uuid.UUID) (entity.COASubGroup, error) {
-	sg, err := s.ICOASubGroupRepository.FindById(companyID, reqId)
-	if err != nil {
-		return sg, err
-	}
-	hasCOAs, err := s.ICOASubGroupRepository.HasCOAs(companyID, reqId)
-	if err != nil {
-		return sg, err
-	}
-	if hasCOAs {
-		return sg, fmt.Errorf("HAS_CHILD_RECORDS")
-	}
-	return sg, s.ICOASubGroupRepository.Delete(companyID, reqId)
+func (s *COASubGroupService) Delete(companyID uuid.UUID, reqId uuid.UUID) error {
+	return s.ICOASubGroupRepository.Delete(companyID, reqId)
 }
 
 func (s *COASubGroupService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {
-	entities, total, err := s.ICOASubGroupRepository.SelectDropdownList(companyID, qp)
+	coa_subgroups, total, err := s.ICOASubGroupRepository.SelectDropdownList(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-	resps := make([]response.SelectDropdownListResponse, 0, len(entities))
-	for _, v := range entities {
+	resps := make([]response.SelectDropdownListResponse, 0, len(coa_subgroups))
+	for _, v := range coa_subgroups {
 		resps = append(resps, response.SelectDropdownListResponse{Value: v.Id, Label: v.Name})
 	}
 	return resps, total, nil
-}
-
-func mapCOASubGroup(v entity.COASubGroup) response.COASubGroupResponse {
-	r := response.COASubGroupResponse{
-		Id:        v.Id,
-		GroupId:   v.GroupId,
-		Code:      v.Code,
-		Name:      v.Name,
-		Status:    v.Status,
-		CreatedAt: v.CreatedAt,
-		UpdatedAt: v.UpdatedAt,
-	}
-	if v.Group != nil {
-		r.Group = &response.COAGroupResponse{
-			Id:            v.Group.Id,
-			Code:          v.Group.Code,
-			Name:          v.Group.Name,
-			Status:        v.Group.Status,
-			CreatedAt:     v.Group.CreatedAt,
-			UpdatedAt:     v.Group.UpdatedAt,
-		}
-	}
-	return r
 }
 
 func (s *COASubGroupService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
@@ -133,4 +141,3 @@ func (s *COASubGroupService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 	}
 	return s.ICOASubGroupRepository.BulkDestroy(companyID, ids)
 }
-

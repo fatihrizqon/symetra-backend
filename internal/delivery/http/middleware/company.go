@@ -19,7 +19,7 @@ func NewCompany(companyRepo repository.ICompanyRepository) fiber.Handler {
 			return nil
 		}
 
-		userID, err := util.GetAuthor(ctx)
+		userID, err := util.GetAuthorID(ctx)
 		if err != nil {
 			util.HandleError(ctx, fiber.StatusUnauthorized, fmt.Errorf("unauthorized"))
 			return nil

@@ -1,14 +1,497 @@
 basePath: /
 definitions:
+  request.BillCreateRequest:
+    properties:
+      bill_date:
+        type: string
+      due_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.BillItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      purchase_order_id:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+      vendor_id:
+        type: string
+    required:
+    - bill_date
+    - due_date
+    - items
+    - vendor_id
+    type: object
+  request.BillItemRequest:
+    properties:
+      account_id:
+        type: string
+      description:
+        type: string
+      discount:
+        minimum: 0
+        type: number
+      price:
+        minimum: 0
+        type: number
+      qty:
+        minimum: 1
+        type: number
+      tax_applicable:
+        type: boolean
+    required:
+    - description
+    - price
+    - qty
+    type: object
+  request.BillPaymentRequest:
+    properties:
+      amount:
+        minimum: 0.01
+        type: number
+      notes:
+        type: string
+      payment_account_id:
+        type: string
+      payment_date:
+        type: string
+    required:
+    - amount
+    - payment_account_id
+    - payment_date
+    type: object
+  request.BillUpdateRequest:
+    properties:
+      bill_date:
+        type: string
+      due_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.BillItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      purchase_order_id:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+      vendor_id:
+        type: string
+    required:
+    - bill_date
+    - due_date
+    - items
+    - vendor_id
+    type: object
+  request.BulkActionRequest:
+    properties:
+      ids:
+        items:
+          type: string
+        minItems: 1
+        type: array
+    required:
+    - ids
+    type: object
+  request.COACreateRequest:
+    properties:
+      code:
+        minLength: 1
+        type: string
+      control_type:
+        enum:
+        - ar
+        - ap
+        - cash
+        - bank
+        type: string
+      is_contra:
+        type: boolean
+      name:
+        minLength: 1
+        type: string
+      subgroup_id:
+        type: string
+    required:
+    - code
+    - name
+    - subgroup_id
+    type: object
+  request.COAGroupCreateRequest:
+    properties:
+      category:
+        type: string
+      code:
+        minLength: 1
+        type: string
+      name:
+        minLength: 1
+        type: string
+      type:
+        enum:
+        - asset
+        - liability
+        - equity
+        - revenue
+        - expense
+        type: string
+    required:
+    - code
+    - name
+    - type
+    type: object
+  request.COAGroupUpdateRequest:
+    properties:
+      category:
+        type: string
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+      type:
+        enum:
+        - asset
+        - liability
+        - equity
+        - revenue
+        - expense
+        type: string
+    required:
+    - code
+    - name
+    - type
+    type: object
+  request.COASubGroupCreateRequest:
+    properties:
+      code:
+        minLength: 1
+        type: string
+      group_id:
+        type: string
+      name:
+        minLength: 1
+        type: string
+    required:
+    - code
+    - group_id
+    - name
+    type: object
+  request.COASubGroupUpdateRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      group_id:
+        type: string
+      id:
+        type: string
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+    required:
+    - code
+    - group_id
+    - name
+    type: object
+  request.COAUpdateRequest:
+    properties:
+      code:
+        maxLength: 20
+        minLength: 1
+        type: string
+      control_type:
+        enum:
+        - ar
+        - ap
+        - cash
+        - bank
+        type: string
+      id:
+        type: string
+      is_contra:
+        type: boolean
+      name:
+        maxLength: 20
+        minLength: 1
+        type: string
+      subgroup_id:
+        type: string
+    required:
+    - code
+    - name
+    - subgroup_id
+    type: object
+  request.CompanyCreateRequest:
+    properties:
+      address:
+        type: string
+      currency:
+        maxLength: 10
+        type: string
+      email:
+        maxLength: 150
+        minLength: 1
+        type: string
+      industry:
+        maxLength: 100
+        type: string
+      legal_name:
+        maxLength: 200
+        type: string
+      name:
+        maxLength: 150
+        minLength: 1
+        type: string
+      phone:
+        maxLength: 30
+        minLength: 1
+        type: string
+      tax_id:
+        maxLength: 50
+        type: string
+    required:
+    - email
+    - name
+    - phone
+    type: object
+  request.CompanyUpdateRequest:
+    properties:
+      address:
+        type: string
+      currency:
+        maxLength: 10
+        type: string
+      email:
+        maxLength: 150
+        type: string
+      id:
+        type: string
+      industry:
+        maxLength: 100
+        type: string
+      legal_name:
+        maxLength: 200
+        type: string
+      name:
+        maxLength: 150
+        minLength: 1
+        type: string
+      phone:
+        maxLength: 30
+        type: string
+      tax_id:
+        maxLength: 50
+        type: string
+    required:
+    - name
+    type: object
+  request.CustomerCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        minLength: 2
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.CustomerUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        minLength: 2
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.InvoiceCreateRequest:
+    properties:
+      customer_id:
+        type: string
+      due_date:
+        type: string
+      invoice_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.InvoiceItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      quotation_id:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+    required:
+    - customer_id
+    - due_date
+    - invoice_date
+    - items
+    type: object
+  request.InvoiceItemRequest:
+    properties:
+      description:
+        type: string
+      discount:
+        minimum: 0
+        type: number
+      price:
+        minimum: 0
+        type: number
+      qty:
+        minimum: 1
+        type: number
+      tax_applicable:
+        type: boolean
+    required:
+    - description
+    - price
+    - qty
+    type: object
+  request.InvoicePaymentRequest:
+    properties:
+      amount:
+        minimum: 0.01
+        type: number
+      notes:
+        type: string
+      payment_account_id:
+        type: string
+      payment_date:
+        type: string
+    required:
+    - amount
+    - payment_account_id
+    - payment_date
+    type: object
+  request.InvoiceUpdateRequest:
+    properties:
+      customer_id:
+        type: string
+      due_date:
+        type: string
+      invoice_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.InvoiceItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      quotation_id:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+    required:
+    - customer_id
+    - due_date
+    - invoice_date
+    - items
+    type: object
+  request.JournalEntryCreateRequest:
+    properties:
+      date:
+        type: string
+      description:
+        minLength: 3
+        type: string
+      file_ids:
+        items:
+          type: string
+        type: array
+      lines:
+        items:
+          $ref: '#/definitions/request.JournalLineRequest'
+        minItems: 2
+        type: array
+    required:
+    - date
+    - description
+    - lines
+    type: object
+  request.JournalEntryUpdateRequest:
+    properties:
+      date:
+        type: string
+      description:
+        minLength: 3
+        type: string
+      file_ids:
+        items:
+          type: string
+        type: array
+      lines:
+        items:
+          $ref: '#/definitions/request.JournalLineRequest'
+        minItems: 2
+        type: array
+    required:
+    - date
+    - description
+    - lines
+    type: object
+  request.JournalLineRequest:
+    properties:
+      coa_id:
+        type: string
+      credit:
+        minimum: 0
+        type: number
+      debit:
+        minimum: 0
+        type: number
+      description:
+        type: string
+    required:
+    - coa_id
+    type: object
   request.LoginRequest:
     properties:
       email:
-        example: '[EMAIL_ADDRESS]'
         maxLength: 254
         minLength: 1
         type: string
       password:
-        example: yoursecretpassword
         maxLength: 100
         minLength: 8
         type: string
@@ -16,27 +499,155 @@ definitions:
     - email
     - password
     type: object
+  request.PurchaseOrderCreateRequest:
+    properties:
+      expiry_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.PurchaseOrderItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      po_date:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+      vendor_id:
+        type: string
+    required:
+    - items
+    - po_date
+    - vendor_id
+    type: object
+  request.PurchaseOrderItemRequest:
+    properties:
+      description:
+        type: string
+      discount:
+        minimum: 0
+        type: number
+      price:
+        minimum: 0
+        type: number
+      qty:
+        minimum: 1
+        type: number
+      tax_applicable:
+        type: boolean
+    required:
+    - description
+    - price
+    - qty
+    type: object
+  request.PurchaseOrderUpdateRequest:
+    properties:
+      expiry_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.PurchaseOrderItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      po_date:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+      vendor_id:
+        type: string
+    required:
+    - items
+    - po_date
+    - vendor_id
+    type: object
+  request.QuotationCreateRequest:
+    properties:
+      customer_id:
+        type: string
+      expiry_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.QuotationItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      quotation_date:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+    required:
+    - customer_id
+    - items
+    - quotation_date
+    type: object
+  request.QuotationItemRequest:
+    properties:
+      description:
+        type: string
+      discount:
+        minimum: 0
+        type: number
+      price:
+        minimum: 0
+        type: number
+      qty:
+        minimum: 1
+        type: number
+      tax_applicable:
+        type: boolean
+    required:
+    - description
+    - price
+    - qty
+    type: object
+  request.QuotationUpdateRequest:
+    properties:
+      customer_id:
+        type: string
+      expiry_date:
+        type: string
+      items:
+        items:
+          $ref: '#/definitions/request.QuotationItemRequest'
+        minItems: 1
+        type: array
+      notes:
+        type: string
+      quotation_date:
+        type: string
+      tax_rate:
+        minimum: 0
+        type: number
+    required:
+    - customer_id
+    - items
+    - quotation_date
+    type: object
   request.RegisterRequest:
     properties:
       email:
-        example: '[EMAIL_ADDRESS]'
         maxLength: 254
         minLength: 1
         type: string
       name:
-        example: John Doe
         maxLength: 100
         minLength: 1
         type: string
       password:
-        example: yoursecretpassword
         maxLength: 100
         minLength: 8
         type: string
       username:
-        example: johndoe
         maxLength: 20
-        minLength: 1
+        minLength: 3
         type: string
     required:
     - email
@@ -47,17 +658,20 @@ definitions:
   request.UserCreateRequest:
     properties:
       email:
+        maxLength: 254
         minLength: 1
         type: string
       name:
+        maxLength: 100
         minLength: 1
         type: string
       password:
+        maxLength: 100
         minLength: 8
         type: string
       username:
         maxLength: 20
-        minLength: 1
+        minLength: 3
         type: string
     required:
     - email
@@ -68,25 +682,67 @@ definitions:
   request.UserUpdateRequest:
     properties:
       email:
+        maxLength: 254
         minLength: 1
         type: string
       id:
         type: string
       name:
-        maxLength: 20
+        maxLength: 100
         minLength: 1
         type: string
       password:
+        maxLength: 100
         minLength: 8
         type: string
       username:
         maxLength: 20
-        minLength: 1
+        minLength: 3
         type: string
     required:
     - email
     - name
     - username
+    type: object
+  request.VendorCreateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        minLength: 2
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
+    type: object
+  request.VendorUpdateRequest:
+    properties:
+      address:
+        type: string
+      coa_id:
+        type: string
+      code:
+        minLength: 2
+        type: string
+      email:
+        type: string
+      name:
+        minLength: 2
+        type: string
+      phone:
+        type: string
+    required:
+    - code
+    - name
     type: object
   response.AuthJSON:
     properties:
@@ -260,6 +916,1461 @@ paths:
       summary: User registration
       tags:
       - Auth
+  /api/v1/bills:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all bill records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all bills
+      tags:
+      - Bills
+    post:
+      consumes:
+      - application/json
+      description: Store a new bill record
+      parameters:
+      - description: Bill Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BillCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create bill
+      tags:
+      - Bills
+  /api/v1/bills/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a bill record by ID
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Bill not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete bill
+      tags:
+      - Bills
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single bill by its ID
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Bill not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get bill by ID
+      tags:
+      - Bills
+    put:
+      consumes:
+      - application/json
+      description: Update bill data by ID
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Bill Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BillUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Bill not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update bill
+      tags:
+      - Bills
+  /api/v1/bills/{id}/confirm:
+    put:
+      consumes:
+      - application/json
+      description: Mark a bill as confirmed and generate related journal entries
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bill confirmed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Confirm a bill
+      tags:
+      - Bills
+  /api/v1/bills/{id}/pay:
+    post:
+      consumes:
+      - application/json
+      description: Record a payment against a confirmed bill
+      parameters:
+      - description: Bill ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Bill Payment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BillPaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bill payment recorded
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Record bill payment
+      tags:
+      - Bills
+  /api/v1/bills/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple bills by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Bills destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete bills
+      tags:
+      - Bills
+  /api/v1/coa:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all coa records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all coas
+      tags:
+      - COA
+    post:
+      consumes:
+      - application/json
+      description: Store a new coa record
+      parameters:
+      - description: COA Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COACreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create coa
+      tags:
+      - COA
+  /api/v1/coa-groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all coa group records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all coa groups
+      tags:
+      - COAGroup
+    post:
+      consumes:
+      - application/json
+      description: Store a new coa group record
+      parameters:
+      - description: COA Group Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAGroupCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create coa group
+      tags:
+      - COAGroup
+  /api/v1/coa-groups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a coa group record by ID
+      parameters:
+      - description: COA Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA Group not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete coa group
+      tags:
+      - COAGroup
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single coa group by its ID
+      parameters:
+      - description: COA Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA Group not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa group by ID
+      tags:
+      - COAGroup
+    put:
+      consumes:
+      - application/json
+      description: Update coa group data by ID
+      parameters:
+      - description: COA Group ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA Group Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAGroupUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA Group not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update coa group
+      tags:
+      - COAGroup
+  /api/v1/coa-groups/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple coa groups by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: COAGroup destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete coa groups
+      tags:
+      - COAGroup
+  /api/v1/coa-subgroups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all coa subgroup records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all coa subgroups
+      tags:
+      - COASubGroup
+    post:
+      consumes:
+      - application/json
+      description: Store a new coa subgroup record
+      parameters:
+      - description: COA SubGroup Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COASubGroupCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create coa subgroup
+      tags:
+      - COASubGroup
+  /api/v1/coa-subgroups/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a coa subgroup record by ID
+      parameters:
+      - description: COA SubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA SubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete coa subgroup
+      tags:
+      - COASubGroup
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single coa subgroup by its ID
+      parameters:
+      - description: COA SubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA SubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa subgroup by ID
+      tags:
+      - COASubGroup
+    put:
+      consumes:
+      - application/json
+      description: Update coa subgroup data by ID
+      parameters:
+      - description: COA SubGroup ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA SubGroup Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COASubGroupUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA SubGroup not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update coa subgroup
+      tags:
+      - COASubGroup
+  /api/v1/coa-subgroups/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple coa subgroups by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: COASubGroup destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete coa subgroups
+      tags:
+      - COASubGroup
+  /api/v1/coa/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a coa record by ID
+      parameters:
+      - description: COA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete coa
+      tags:
+      - COA
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single coa by its ID
+      parameters:
+      - description: COA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa by ID
+      tags:
+      - COA
+    put:
+      consumes:
+      - application/json
+      description: Update coa data by ID
+      parameters:
+      - description: COA ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: COA Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.COAUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: COA not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update coa
+      tags:
+      - COA
+  /api/v1/coa/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple coas by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: COA destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete coas
+      tags:
+      - COA
+  /api/v1/companies:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all company records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column (name, legal_name, email, status, created_at, updated_at)
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      - description: Filter by status
+        in: query
+        name: status
+        type: string
+      - description: Filter by email verified (true, false)
+        in: query
+        name: verified
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all companies
+      tags:
+      - Companies
+    post:
+      consumes:
+      - application/json
+      description: Store a new company record
+      parameters:
+      - description: Company Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CompanyCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create company
+      tags:
+      - Companies
+  /api/v1/companies/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a company record by ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Company not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete company
+      tags:
+      - Companies
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single company by its ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Company not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get company by ID
+      tags:
+      - Companies
+    put:
+      consumes:
+      - application/json
+      description: Update company data by ID
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Company Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CompanyUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Company not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update company
+      tags:
+      - Companies
+  /api/v1/companies/{id}/members:
+    post:
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Assign member to company
+      tags:
+      - Company
+  /api/v1/companies/{id}/members/{userId}:
+    delete:
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Remove member from company
+      tags:
+      - Company
+  /api/v1/companies/{id}/members/{userId}/role:
+    put:
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Update member role
+      tags:
+      - Company
+  /api/v1/companies/{id}/select:
+    post:
+      description: Set the active company for the current session. Call this again
+        to switch company.
+      parameters:
+      - description: Company ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Active company has been set.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Invalid company ID
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "403":
+          description: Not a member of this company
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Select or switch active company
+      tags:
+      - Companies
+  /api/v1/companies/active:
+    get:
+      description: Returns the company that is currently active in this session
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved active company.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: No active company selected
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get current active company
+      tags:
+      - Companies
+  /api/v1/companies/mine:
+    get:
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get all companies the authenticated user belongs to
+      tags:
+      - Company
+  /api/v1/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all customer records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all customers
+      tags:
+      - Customers
+    post:
+      consumes:
+      - application/json
+      description: Store a new customer record
+      parameters:
+      - description: Customer Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create customer
+      tags:
+      - Customers
+  /api/v1/customers/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a customer record by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete customer
+      tags:
+      - Customers
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single customer by its ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get customer by ID
+      tags:
+      - Customers
+    put:
+      consumes:
+      - application/json
+      description: Update customer data by ID
+      parameters:
+      - description: Customer ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Customer Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.CustomerUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Customer not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update customer
+      tags:
+      - Customers
+  /api/v1/customers/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple customers by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Customers destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete customers
+      tags:
+      - Customers
+  /api/v1/dropdown/bills:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of bills for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get bill dropdown list
+      tags:
+      - Bills
+  /api/v1/dropdown/coa:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of coas for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa dropdown list
+      tags:
+      - COA
+  /api/v1/dropdown/coa-groups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of coa groups for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa group dropdown list
+      tags:
+      - COAGroup
+  /api/v1/dropdown/coa-subgroups:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of coa subgroups for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get coa subgroup dropdown list
+      tags:
+      - COASubGroup
+  /api/v1/dropdown/customers:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of customers for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get customer dropdown list
+      tags:
+      - Customers
+  /api/v1/dropdown/invoices:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of invoices for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get invoice dropdown list
+      tags:
+      - Invoices
+  /api/v1/dropdown/purchase-orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of purchase orders for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get purchase order dropdown list
+      tags:
+      - PurchaseOrders
+  /api/v1/dropdown/quotations:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of quotations for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get quotation dropdown list
+      tags:
+      - Quotations
+  /api/v1/dropdown/vendors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a list of vendors for dropdown selection
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Success
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get vendor dropdown list
+      tags:
+      - Vendors
   /api/v1/files/upload:
     post:
       consumes:
@@ -291,6 +2402,902 @@ paths:
       summary: Upload a file
       tags:
       - Files
+  /api/v1/invoices:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all invoice records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all invoices
+      tags:
+      - Invoices
+    post:
+      consumes:
+      - application/json
+      description: Store a new invoice record
+      parameters:
+      - description: Invoice Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.InvoiceCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create invoice
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a invoice record by ID
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete invoice
+      tags:
+      - Invoices
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single invoice by its ID
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get invoice by ID
+      tags:
+      - Invoices
+    put:
+      consumes:
+      - application/json
+      description: Update invoice data by ID
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invoice Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.InvoiceUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Invoice not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update invoice
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}/confirm:
+    put:
+      consumes:
+      - application/json
+      description: Mark a invoice as confirmed
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invoice confirmed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Confirm a invoice
+      tags:
+      - Invoices
+  /api/v1/invoices/{id}/pay:
+    post:
+      consumes:
+      - application/json
+      description: Record a payment against a confirmed invoice
+      parameters:
+      - description: Invoice ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Invoice Payment Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.InvoicePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invoice payment recorded
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Record invoice payment
+      tags:
+      - Invoices
+  /api/v1/invoices/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple invoices by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Invoices destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete invoices
+      tags:
+      - Invoices
+  /api/v1/journal_entries:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all journal entry records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all journal entrys
+      tags:
+      - JournalEntries
+    post:
+      consumes:
+      - application/json
+      description: Store a new journal entry record
+      parameters:
+      - description: Journal Entry Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a journal entry record by ID
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Journal Entry not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete journal entry
+      tags:
+      - JournalEntries
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single journal entry by its ID
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Journal Entry not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get journal entry by ID
+      tags:
+      - JournalEntries
+    put:
+      consumes:
+      - application/json
+      description: Update journal entry data by ID
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Journal Entry Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.JournalEntryUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Journal Entry not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}/post:
+    put:
+      consumes:
+      - application/json
+      description: Post a journal entry to the ledger
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Journal Entry posted
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Post a journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/{id}/void:
+    put:
+      consumes:
+      - application/json
+      description: Void a journal entry
+      parameters:
+      - description: Journal Entry ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Journal Entry voided
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Void a journal entry
+      tags:
+      - JournalEntries
+  /api/v1/journal_entries/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple journal entrys by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: JournalEntries destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete journal entrys
+      tags:
+      - JournalEntries
+  /api/v1/purchase-orders:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all purchase order records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all purchase orders
+      tags:
+      - PurchaseOrders
+    post:
+      consumes:
+      - application/json
+      description: Store a new purchase order record
+      parameters:
+      - description: Purchase Order Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.PurchaseOrderCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create purchase order
+      tags:
+      - PurchaseOrders
+  /api/v1/purchase-orders/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a purchase order record by ID
+      parameters:
+      - description: Purchase Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Purchase Order not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete purchase order
+      tags:
+      - PurchaseOrders
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single purchase order by its ID
+      parameters:
+      - description: Purchase Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Purchase Order not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get purchase order by ID
+      tags:
+      - PurchaseOrders
+    put:
+      consumes:
+      - application/json
+      description: Update purchase order data by ID
+      parameters:
+      - description: Purchase Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Purchase Order Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.PurchaseOrderUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Purchase Order not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update purchase order
+      tags:
+      - PurchaseOrders
+  /api/v1/purchase-orders/{id}/approve:
+    put:
+      consumes:
+      - application/json
+      description: Mark a purchase order as approved
+      parameters:
+      - description: Purchase Order ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Purchase Order approved
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Approve a purchase order
+      tags:
+      - PurchaseOrders
+  /api/v1/purchase-orders/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple purchase orders by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: PurchaseOrders destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete purchase orders
+      tags:
+      - PurchaseOrders
+  /api/v1/quotations:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all quotation records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all quotations
+      tags:
+      - Quotations
+    post:
+      consumes:
+      - application/json
+      description: Store a new quotation record
+      parameters:
+      - description: Quotation Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.QuotationCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create quotation
+      tags:
+      - Quotations
+  /api/v1/quotations/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a quotation record by ID
+      parameters:
+      - description: Quotation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Quotation not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete quotation
+      tags:
+      - Quotations
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single quotation by its ID
+      parameters:
+      - description: Quotation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Quotation not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get quotation by ID
+      tags:
+      - Quotations
+    put:
+      consumes:
+      - application/json
+      description: Update quotation data by ID
+      parameters:
+      - description: Quotation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Quotation Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.QuotationUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Quotation not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update quotation
+      tags:
+      - Quotations
+  /api/v1/quotations/{id}/approve:
+    put:
+      consumes:
+      - application/json
+      description: Mark a quotation as approved
+      parameters:
+      - description: Quotation ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Quotation approved
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Approve a quotation
+      tags:
+      - Quotations
+  /api/v1/quotations/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple quotations by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Quotations destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete quotations
+      tags:
+      - Quotations
   /api/v1/users:
     get:
       consumes:
@@ -507,6 +3514,219 @@ paths:
       summary: Unlock user
       tags:
       - Users
+  /api/v1/users/me/avatar:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Upload a new avatar for the authenticated user
+      parameters:
+      - description: Avatar image file
+        in: formData
+        name: avatar
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Avatar has been uploaded successfully.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Upload user avatar
+      tags:
+      - Users
+  /api/v1/vendors:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve all vendor records with pagination
+      parameters:
+      - description: Search keyword
+        in: query
+        name: search
+        type: string
+      - description: Page number
+        in: query
+        name: page
+        type: integer
+      - description: Page size
+        in: query
+        name: page_size
+        type: integer
+      - description: Sort column
+        in: query
+        name: sort
+        type: string
+      - description: Sort direction (asc, desc)
+        in: query
+        name: order
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved all records.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get all vendors
+      tags:
+      - Vendors
+    post:
+      consumes:
+      - application/json
+      description: Store a new vendor record
+      parameters:
+      - description: Vendor Create Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: A new record has been stored.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Create vendor
+      tags:
+      - Vendors
+  /api/v1/vendors/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Remove a vendor record by ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been deleted.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Delete vendor
+      tags:
+      - Vendors
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a single vendor by its ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully retrieved selected record.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Get vendor by ID
+      tags:
+      - Vendors
+    put:
+      consumes:
+      - application/json
+      description: Update vendor data by ID
+      parameters:
+      - description: Vendor ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Vendor Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.VendorUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Selected record has been updated.
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "404":
+          description: Vendor not found
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Update vendor
+      tags:
+      - Vendors
+  /api/v1/vendors/destroy:
+    delete:
+      consumes:
+      - application/json
+      description: Delete multiple vendors by their IDs
+      parameters:
+      - description: Bulk Action Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/request.BulkActionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Vendors destroyed
+          schema:
+            $ref: '#/definitions/response.JSON'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/response.JSON'
+      security:
+      - BearerAuth: []
+      summary: Bulk delete vendors
+      tags:
+      - Vendors
 securityDefinitions:
   BearerAuth:
     in: header

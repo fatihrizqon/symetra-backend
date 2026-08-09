@@ -25,14 +25,12 @@ type User struct {
 	Avatar          *File      `gorm:"foreignKey:AvatarFileId" json:"avatar,omitempty"`
 	CreatedAt       time.Time  `gorm:"autoCreateTime;" json:"created_at"`
 	UpdatedAt       time.Time  `gorm:"autoUpdateTime;" json:"updated_at"`
-
 }
 
 func (User) SearchableFields() []string {
 	return []string{"username", "email"}
 }
 
-// Supports multi-value filters via repeated params (e.g. ?status=1&status=2).
 func (User) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
 	if values, ok := filters["status"]; ok {
 		db = db.Where("status IN ?", values)

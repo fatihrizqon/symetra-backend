@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"gorm.io/gorm"
 )
 
 type FiscalYearStatus string
@@ -17,16 +18,24 @@ const (
 func (FiscalYear) TableName() string { return "fiscal_years" }
 
 type FiscalYear struct {
-	Id             uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
-	CompanyId      uuid.UUID        `gorm:"type:uuid;not null;index;" json:"company_id"`
-	Name           string           `gorm:"type:character varying;not null;" json:"name"`
-	StartDate      time.Time        `gorm:"type:date;not null;" json:"start_date"`
-	EndDate        time.Time        `gorm:"type:date;not null;" json:"end_date"`
-	Status         FiscalYearStatus `gorm:"type:character varying;not null;default:'draft';" json:"status"`
-	PeriodType     string           `gorm:"type:character varying;not null;default:'monthly';" json:"period_type"`
-	ClosingJEId    *uuid.UUID       `gorm:"type:uuid;" json:"closing_je_id"`
-	ClosedAt       *time.Time       `json:"closed_at"`
-	CreatedAt      time.Time        `gorm:"autoCreateTime;" json:"created_at"`
-	UpdatedAt      time.Time        `gorm:"autoUpdateTime;" json:"updated_at"`
-	Periods        []FiscalPeriod   `gorm:"foreignKey:FiscalYearId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"periods"`
+	Id          uuid.UUID        `gorm:"type:uuid;primaryKey;default:gen_random_uuid();" json:"id"`
+	CompanyId   uuid.UUID        `gorm:"type:uuid;not null;index;" json:"company_id"`
+	Name        string           `gorm:"type:character varying;not null;" json:"name"`
+	StartDate   time.Time        `gorm:"type:date;not null;" json:"start_date"`
+	EndDate     time.Time        `gorm:"type:date;not null;" json:"end_date"`
+	Status      FiscalYearStatus `gorm:"type:character varying;not null;default:'draft';" json:"status"`
+	PeriodType  string           `gorm:"type:character varying;not null;default:'monthly';" json:"period_type"`
+	ClosingJEId *uuid.UUID       `gorm:"type:uuid;" json:"closing_je_id"`
+	ClosedAt    *time.Time       `json:"closed_at"`
+	CreatedAt   time.Time        `gorm:"autoCreateTime;" json:"created_at"`
+	UpdatedAt   time.Time        `gorm:"autoUpdateTime;" json:"updated_at"`
+	Periods     []FiscalPeriod   `gorm:"foreignKey:FiscalYearId;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;" json:"periods"`
+}
+
+func (FiscalYear) SearchableFields() []string {
+	return []string{"name"}
+}
+
+func (FiscalYear) ApplyFilters(db *gorm.DB, filters map[string][]string) *gorm.DB {
+	return db
 }

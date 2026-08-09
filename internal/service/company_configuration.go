@@ -15,20 +15,47 @@ type ICompanyConfigurationService interface {
 }
 
 type CompanyConfigurationService struct {
-	Repo     repository.ICompanyConfigurationRepository
-	validate *validator.Validate
+	validate                        *validator.Validate
+	ICompanyConfigurationRepository repository.ICompanyConfigurationRepository
 }
 
-func NewCompanyConfigurationService(repo repository.ICompanyConfigurationRepository, validate *validator.Validate) ICompanyConfigurationService {
-	return &CompanyConfigurationService{Repo: repo, validate: validate}
+func NewCompanyConfigurationService(validate *validator.Validate, repo repository.ICompanyConfigurationRepository) ICompanyConfigurationService {
+	return &CompanyConfigurationService{
+		validate:                        validate,
+		ICompanyConfigurationRepository: repo,
+	}
 }
 
 func (s *CompanyConfigurationService) GetByCompanyId(companyID uuid.UUID) (response.CompanyConfigurationResponse, error) {
-	config, err := s.Repo.GetByCompanyId(companyID)
+	v, err := s.ICompanyConfigurationRepository.GetByCompanyId(companyID)
 	if err != nil {
 		return response.CompanyConfigurationResponse{}, err
 	}
-	return mapCompanyConfiguration(config), nil
+
+	resp := response.CompanyConfigurationResponse{
+		Id:                     v.Id,
+		CompanyId:              v.CompanyId,
+		EnableTax:              v.EnableTax,
+		TaxRate:                v.TaxRate,
+		ARAccountId:            v.ARAccountId,
+		APAccountId:            v.APAccountId,
+		SalesRevenueAccountId:  v.SalesRevenueAccountId,
+		TaxPayableAccountId:    v.TaxPayableAccountId,
+		TaxReceivableAccountId: v.TaxReceivableAccountId,
+		BankAccountId:          v.BankAccountId,
+		CashAccountId:          v.CashAccountId,
+		RetainedEarningsCOAId:  v.RetainedEarningsCOAId,
+		InvoicePrefix:          v.InvoicePrefix,
+		QuotationPrefix:        v.QuotationPrefix,
+		InvoiceDueDays:         v.InvoiceDueDays,
+	}
+	if v.ARAccount != nil {
+		resp.ARAccount = &response.COAResponse{Id: v.ARAccount.Id, Code: v.ARAccount.Code, Name: v.ARAccount.Name}
+	}
+	if v.APAccount != nil {
+		resp.APAccount = &response.COAResponse{Id: v.APAccount.Id, Code: v.APAccount.Code, Name: v.APAccount.Name}
+	}
+	return resp, nil
 }
 
 func (s *CompanyConfigurationService) Upsert(companyID uuid.UUID, req request.CompanyConfigurationUpdateRequest) (response.CompanyConfigurationResponse, error) {
@@ -62,14 +89,11 @@ func (s *CompanyConfigurationService) Upsert(companyID uuid.UUID, req request.Co
 		config.InvoiceDueDays = 30
 	}
 
-	result, err := s.Repo.Upsert(companyID, config)
+	v, err := s.ICompanyConfigurationRepository.Upsert(companyID, config)
 	if err != nil {
 		return response.CompanyConfigurationResponse{}, err
 	}
-	return mapCompanyConfiguration(result), nil
-}
 
-func mapCompanyConfiguration(v entity.CompanyConfiguration) response.CompanyConfigurationResponse {
 	resp := response.CompanyConfigurationResponse{
 		Id:                     v.Id,
 		CompanyId:              v.CompanyId,
@@ -87,12 +111,11 @@ func mapCompanyConfiguration(v entity.CompanyConfiguration) response.CompanyConf
 		QuotationPrefix:        v.QuotationPrefix,
 		InvoiceDueDays:         v.InvoiceDueDays,
 	}
-
 	if v.ARAccount != nil {
 		resp.ARAccount = &response.COAResponse{Id: v.ARAccount.Id, Code: v.ARAccount.Code, Name: v.ARAccount.Name}
 	}
 	if v.APAccount != nil {
 		resp.APAccount = &response.COAResponse{Id: v.APAccount.Id, Code: v.APAccount.Code, Name: v.APAccount.Name}
 	}
-	return resp
+	return resp, nil
 }

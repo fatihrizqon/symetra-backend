@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// pindah ke AuthResponse soon
 type AuthResult struct {
 	AccessToken  string
 	RefreshToken string

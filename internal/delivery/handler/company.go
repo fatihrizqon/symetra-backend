@@ -32,16 +32,19 @@ func NewCompanyHandler(serv service.ICompanyService) *CompanyHandler {
 // @Failure 400 {object} response.JSON "Bad request"
 // @Router /api/v1/companies [post]
 func (h *CompanyHandler) Create(ctx fiber.Ctx) error {
-	userId, err := util.GetAuthor(ctx)
+	authorID, err := util.GetAuthorID(ctx)
+	if err != nil {
+		util.HandleError(ctx, fiber.StatusBadRequest, err)
+		return nil
+	}
 
 	req := request.CompanyCreateRequest{}
-
 	if err := util.Parse(ctx, &req); err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.ICompanyService.Create(req, userId)
+	result, err := h.ICompanyService.Create(req, authorID)
 	if err != nil {
 		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
 			Status:  fiber.StatusBadRequest,
@@ -74,9 +77,9 @@ func (h *CompanyHandler) Create(ctx fiber.Ctx) error {
 // @Failure 500 {object} response.JSON "Internal Server Error"
 // @Router /api/v1/companies [get]
 func (h *CompanyHandler) FindAll(ctx fiber.Ctx) error {
-	qp := util.ParseQueryParams(ctx, entity.Company{}.SearchableFields())
-
-	entities, totalCount, err := h.ICompanyService.FindAll(qp)
+	var entity = entity.Company{}
+	qp := util.ParseQueryParams(ctx, entity.SearchableFields())
+	results, totalCount, err := h.ICompanyService.FindAll(qp)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status:  fiber.StatusInternalServerError,
@@ -84,23 +87,19 @@ func (h *CompanyHandler) FindAll(ctx fiber.Ctx) error {
 			Errors:  err.Error(),
 		})
 	}
-
 	if totalCount == 0 || (qp.Page-1)*qp.PageSize >= totalCount {
 		return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 			Status:  fiber.StatusOK,
 			Message: "No records found.",
-			Data:    []response.CompanyResponse{},
-			Meta:    nil,
 		})
 	}
 
 	baseURL := ctx.Protocol() + "://" + ctx.Hostname() + ctx.Path()
 	meta := util.GenerateMeta(baseURL, qp, totalCount)
-
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  fiber.StatusOK,
 		Message: "Successfully retrieved all records.",
-		Data:    entities,
+		Data:    results,
 		Meta:    &meta,
 	})
 }
@@ -117,15 +116,13 @@ func (h *CompanyHandler) FindAll(ctx fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Company not found"
 // @Router /api/v1/companies/{id} [get]
 func (h *CompanyHandler) FindById(ctx fiber.Ctx) error {
-	id := ctx.Params("id")
-	parsedId, err := uuid.Parse(id)
-
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.ICompanyService.FindById(parsedId)
+	result, err := h.ICompanyService.FindById(id)
 	if err != nil {
 		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
 			Status:  fiber.StatusNotFound,
@@ -146,14 +143,14 @@ func (h *CompanyHandler) FindById(ctx fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies/mine [get]
 func (h *CompanyHandler) FindMyCompanies(ctx fiber.Ctx) error {
-	userId, err := util.GetAuthor(ctx)
+	authorID, err := util.GetAuthorID(ctx)
 
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusUnauthorized, err)
 		return nil
 	}
 
-	result, err := h.ICompanyService.FindMyCompanies(userId)
+	result, err := h.ICompanyService.FindMyCompanies(authorID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status: fiber.StatusInternalServerError, Message: err.Error(),
@@ -200,14 +197,14 @@ func (h *CompanyHandler) FindMembersByCompany(ctx fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies/{id}/members [post]
 func (h *CompanyHandler) AssignMember(ctx fiber.Ctx) error {
-	authorId, err := util.GetAuthor(ctx)
+	authorID, err := util.GetAuthorID(ctx)
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusUnauthorized, err)
 		return nil
 	}
 
-	companyId := ctx.Params("id")
-	parsedCompanyId, err := uuid.Parse(companyId)
+	companyID := ctx.Params("id")
+	parsedCompanyId, err := uuid.Parse(companyID)
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -220,7 +217,7 @@ func (h *CompanyHandler) AssignMember(ctx fiber.Ctx) error {
 	}
 	req.CompanyId = parsedCompanyId
 
-	result, err := h.ICompanyService.AssignMember(req, authorId)
+	result, err := h.ICompanyService.AssignMember(req, authorID)
 	if err != nil {
 		return ctx.Status(fiber.StatusInternalServerError).JSON(response.JSON{
 			Status: fiber.StatusInternalServerError, Message: err.Error(),
@@ -238,10 +235,10 @@ func (h *CompanyHandler) AssignMember(ctx fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies/{id}/members/{userId}/role [put]
 func (h *CompanyHandler) UpdateMemberRole(ctx fiber.Ctx) error {
-	companyId := ctx.Params("id")
+	companyID := ctx.Params("id")
 	userId := ctx.Params("user_id")
 
-	parsedCompanyId, err := uuid.Parse(companyId)
+	parsedCompanyId, err := uuid.Parse(companyID)
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -279,10 +276,10 @@ func (h *CompanyHandler) UpdateMemberRole(ctx fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /api/v1/companies/{id}/members/{userId} [delete]
 func (h *CompanyHandler) RemoveMember(ctx fiber.Ctx) error {
-	companyId := ctx.Params("id")
+	companyID := ctx.Params("id")
 	userId := ctx.Params("user_id")
 
-	parsedCompanyId, err := uuid.Parse(companyId)
+	parsedCompanyId, err := uuid.Parse(companyID)
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
@@ -325,13 +322,13 @@ func (h *CompanyHandler) Update(ctx fiber.Ctx) error {
 		return nil
 	}
 
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	req.Id = parsedId
+	req.Id = id
 
 	result, err := h.ICompanyService.Update(req)
 	if err != nil {
@@ -360,24 +357,22 @@ func (h *CompanyHandler) Update(ctx fiber.Ctx) error {
 // @Failure 404 {object} response.JSON "Company not found"
 // @Router /api/v1/companies/{id} [delete]
 func (h *CompanyHandler) Delete(ctx fiber.Ctx) error {
-	parsedId, err := uuid.Parse(ctx.Params("id"))
+	id, err := uuid.Parse(ctx.Params("id"))
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusBadRequest, err)
 		return nil
 	}
 
-	result, err := h.ICompanyService.Delete(parsedId)
+	err = h.ICompanyService.Delete(id)
 	if err != nil {
-		return ctx.Status(fiber.StatusNotFound).JSON(response.JSON{
-			Status:  fiber.StatusNotFound,
+		return ctx.Status(fiber.StatusBadRequest).JSON(response.JSON{
+			Status:  fiber.StatusBadRequest,
 			Message: err.Error(),
 		})
 	}
-
 	return ctx.Status(fiber.StatusOK).JSON(response.JSON{
 		Status:  fiber.StatusOK,
 		Message: "Selected record has been deleted.",
-		Data:    result,
 	})
 }
 
@@ -394,7 +389,7 @@ func (h *CompanyHandler) Delete(ctx fiber.Ctx) error {
 // @Failure 403 {object} response.JSON "Not a member of this company"
 // @Router /api/v1/companies/{id}/select [post]
 func (h *CompanyHandler) SelectCompany(ctx fiber.Ctx) error {
-	userID, err := util.GetAuthor(ctx)
+	userID, err := util.GetAuthorID(ctx)
 	if err != nil {
 		util.HandleError(ctx, fiber.StatusUnauthorized, err)
 		return nil
@@ -474,4 +469,3 @@ func (h *CompanyHandler) Destroy(ctx fiber.Ctx) error {
 		Message: "Records have been deleted.",
 	})
 }
-

@@ -21,7 +21,7 @@ type IUserService interface {
 	FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error)
 	FindById(reqId uuid.UUID) (response.UserResponse, error)
 	Update(req request.UserUpdateRequest) (response.UserResponse, error)
-	Delete(reqId uuid.UUID) (response.UserResponse, error)
+	Delete(reqId uuid.UUID) error
 	Lock(reqId uuid.UUID) (response.UserResponse, error)
 	Unlock(reqId uuid.UUID) (response.UserResponse, error)
 	UploadAvatar(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) (response.UserResponse, error)
@@ -29,16 +29,16 @@ type IUserService interface {
 }
 
 type UserService struct {
-	IUserRepository repository.IUserRepository
 	validate        *validator.Validate
 	fileService     IFileService
+	IUserRepository repository.IUserRepository
 }
 
-func NewUserService(repo repository.IUserRepository, validate *validator.Validate, fileService IFileService) IUserService {
+func NewUserService(validate *validator.Validate, fileService IFileService, repo repository.IUserRepository) IUserService {
 	return &UserService{
-		IUserRepository: repo,
 		validate:        validate,
 		fileService:     fileService,
+		IUserRepository: repo,
 	}
 }
 
@@ -52,25 +52,24 @@ func (s *UserService) Create(req request.UserCreateRequest) (entity.User, error)
 		return entity.User{}, errors.New("failed to hash password")
 	}
 
-	u := entity.User{
+	user := entity.User{
 		Username: strings.ToLower(strings.TrimSpace(req.Username)),
 		Name:     strings.TrimSpace(req.Name),
 		Email:    strings.ToLower(strings.TrimSpace(req.Email)),
 		Password: string(hashed),
 	}
 
-
 	err = s.IUserRepository.WithTransaction(func(txRepo repository.IUserRepository) error {
 		var txErr error
-		u, txErr = txRepo.Create(u)
+		user, txErr = txRepo.Create(user)
 		return txErr
 	})
 
-	return u, err
+	return user, err
 }
 
 func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error) {
-	entities, totalCount, err := s.IUserRepository.FindAll(qp)
+	users, totalCount, err := s.IUserRepository.FindAll(qp)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -84,8 +83,8 @@ func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, in
 		return nil, totalCount, nil
 	}
 
-	resps := make([]response.UserResponse, 0, len(entities))
-	for _, u := range entities {
+	resps := make([]response.UserResponse, 0, len(users))
+	for _, u := range users {
 		resp := response.UserResponse{
 			Id:        u.Id,
 			Username:  u.Username,
@@ -94,7 +93,6 @@ func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, in
 			Status:    u.Status,
 			CreatedAt: u.CreatedAt,
 			UpdatedAt: u.UpdatedAt,
-
 		}
 		if u.Avatar != nil {
 			resp.AvatarURL = "/uploads/" + u.Avatar.Path
@@ -109,29 +107,28 @@ func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, in
 }
 
 func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
-	u, err := s.IUserRepository.FindById(reqId)
+	user, err := s.IUserRepository.FindById(reqId)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
 
 	resp := response.UserResponse{
-		Id:        u.Id,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-
+		Id:        user.Id,
+		Username:  user.Username,
+		Name:      user.Name,
+		Email:     user.Email,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 
-	if u.Avatar != nil {
-		resp.AvatarURL = "/uploads/" + u.Avatar.Path
+	if user.Avatar != nil {
+		resp.AvatarURL = "/uploads/" + user.Avatar.Path
 	}
 
 	permissionSet := make(map[string]struct{})
 
-	for _, r := range u.Roles {
+	for _, r := range user.Roles {
 		resp.Roles = append(resp.Roles, r.Name)
 
 		for _, p := range r.Permissions {
@@ -155,23 +152,23 @@ func (s *UserService) Update(req request.UserUpdateRequest) (response.UserRespon
 		hashedPassword = string(hashed)
 	}
 
-	var u entity.User
+	var user entity.User
 	err := s.IUserRepository.WithTransaction(func(txRepo repository.IUserRepository) error {
 		var err error
-		u, err = txRepo.FindById(req.Id)
+		user, err = txRepo.FindById(req.Id)
 		if err != nil {
 			return err
 		}
 
-		u.Username = strings.ToLower(req.Username)
-		u.Name = req.Name
-		u.Email = req.Email
+		user.Username = strings.ToLower(req.Username)
+		user.Name = req.Name
+		user.Email = req.Email
 
 		if hashedPassword != "" {
-			u.Password = hashedPassword
+			user.Password = hashedPassword
 		}
 
-		if err := txRepo.Update(u); err != nil {
+		if err := txRepo.Update(user); err != nil {
 			return err
 		}
 		return nil
@@ -182,13 +179,13 @@ func (s *UserService) Update(req request.UserUpdateRequest) (response.UserRespon
 	}
 
 	return response.UserResponse{
-		Id:        u.Id,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		Id:        user.Id,
+		Username:  user.Username,
+		Name:      user.Name,
+		Email:     user.Email,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
 
@@ -202,47 +199,30 @@ func (s *UserService) UploadAvatar(ctx context.Context, userId uuid.UUID, file *
 		return response.UserResponse{}, err
 	}
 
-	u, err := s.IUserRepository.FindById(userId)
+	user, err := s.IUserRepository.FindById(userId)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
 
 	resp := response.UserResponse{
-		Id:        u.Id,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
+		Id:        user.Id,
+		Username:  user.Username,
+		Name:      user.Name,
+		Email:     user.Email,
+		Status:    user.Status,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 
-	if u.Avatar != nil {
-		resp.AvatarURL = "/uploads/" + u.Avatar.Path // Ideally use storage.GetURL but keeping it simple, or inject base url. wait, FileService returns URL in FileResponse!
+	if user.Avatar != nil {
+		resp.AvatarURL = "/uploads/" + user.Avatar.Path // Ideally use storage.GetURL but keeping it simple, or inject base url. wait, FileService returns URL in FileResponse!
 	}
 
 	return resp, nil
 }
 
-func (s *UserService) Delete(reqId uuid.UUID) (response.UserResponse, error) {
-	u, err := s.IUserRepository.FindById(reqId)
-	if err != nil {
-		return response.UserResponse{}, err
-	}
-
-	if err := s.IUserRepository.Delete(reqId); err != nil {
-		return response.UserResponse{}, err
-	}
-
-	return response.UserResponse{
-		Id:        u.Id,
-		Username:  u.Username,
-		Name:      u.Name,
-		Email:     u.Email,
-		Status:    u.Status,
-		CreatedAt: u.CreatedAt,
-		UpdatedAt: u.UpdatedAt,
-	}, nil
+func (s *UserService) Delete(reqId uuid.UUID) error {
+	return s.IUserRepository.Delete(reqId)
 }
 
 func (s *UserService) Lock(reqId uuid.UUID) (response.UserResponse, error) {
@@ -292,4 +272,3 @@ func (s *UserService) Destroy(ids []uuid.UUID) error {
 	}
 	return s.IUserRepository.BulkDestroy(ids)
 }
-
