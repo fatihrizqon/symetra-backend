@@ -47,9 +47,9 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		return entity.Bill{}, err
 	}
 
-	var billItems []entity.BillItem
+	var items []entity.BillItem
 	for _, item := range req.Items {
-		billItems = append(billItems, entity.BillItem{
+		items = append(items, entity.BillItem{
 			Description:   item.Description,
 			Qty:           item.Qty,
 			Price:         item.Price,
@@ -59,7 +59,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		})
 	}
 
-	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(billItems, req.TaxRate)
+	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(items, req.TaxRate)
 
 	bill := entity.Bill{
 		CompanyId:       companyID,
@@ -80,7 +80,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		PaymentStatus:   entity.PaymentStatusUnpaid,
 		Notes:           req.Notes,
 		CreatedBy:       authorID,
-		Items:           billItems,
+		Items:           items,
 	}
 
 	err := s.IBillRepository.WithTransaction(func(txRepo repository.IBillRepository) error {
@@ -95,9 +95,9 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		return entity.Bill{}, err
 	}
 
-	respItems := make([]entity.BillItem, 0, len(createdBill.Items))
+	billItems := make([]entity.BillItem, 0, len(createdBill.Items))
 	for _, item := range createdBill.Items {
-		respItems = append(respItems, entity.BillItem{
+		billItems = append(billItems, entity.BillItem{
 			Id:            item.Id,
 			Description:   item.Description,
 			Qty:           item.Qty,
@@ -132,7 +132,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		CreatedBy:       createdBill.CreatedBy,
 		CreatedAt:       createdBill.CreatedAt,
 		UpdatedAt:       createdBill.UpdatedAt,
-		Items:           respItems,
+		Items:           billItems,
 	}
 
 	if createdBill.Vendor != nil {
@@ -180,9 +180,9 @@ func (s *BillService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]enti
 
 	results := make([]entity.Bill, 0, len(bills))
 	for _, bill := range bills {
-		respItems := make([]entity.BillItem, 0, len(bill.Items))
+		billItems := make([]entity.BillItem, 0, len(bill.Items))
 		for _, item := range bill.Items {
-			respItems = append(respItems, entity.BillItem{
+			billItems = append(billItems, entity.BillItem{
 				Id:            item.Id,
 				Description:   item.Description,
 				Qty:           item.Qty,
@@ -217,7 +217,7 @@ func (s *BillService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]enti
 			CreatedBy:       bill.CreatedBy,
 			CreatedAt:       bill.CreatedAt,
 			UpdatedAt:       bill.UpdatedAt,
-			Items:           respItems,
+			Items:           billItems,
 		}
 
 		if bill.Vendor != nil {
@@ -386,9 +386,9 @@ func (s *BillService) Update(companyID uuid.UUID, req request.BillUpdateRequest)
 		return entity.Bill{}, err
 	}
 
-	respItems := make([]entity.BillItem, 0, len(updatedBill.Items))
+	billItems := make([]entity.BillItem, 0, len(updatedBill.Items))
 	for _, item := range updatedBill.Items {
-		respItems = append(respItems, entity.BillItem{
+		billItems = append(billItems, entity.BillItem{
 			Id:            item.Id,
 			Description:   item.Description,
 			Qty:           item.Qty,
@@ -423,7 +423,7 @@ func (s *BillService) Update(companyID uuid.UUID, req request.BillUpdateRequest)
 		CreatedBy:       updatedBill.CreatedBy,
 		CreatedAt:       updatedBill.CreatedAt,
 		UpdatedAt:       updatedBill.UpdatedAt,
-		Items:           respItems,
+		Items:           billItems,
 	}
 
 	if updatedBill.Vendor != nil {

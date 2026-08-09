@@ -25,38 +25,55 @@ type IJournalEntryService interface {
 }
 
 type JournalEntryService struct {
-	validate                *validator.Validate
-	IJournalEntryRepository repository.IJournalEntryRepository
-	ICOARepository          repository.ICOARepository
-	IFiscalYearRepository   repository.IFiscalYearRepository
+	validate         *validator.Validate
+	journalEntryRepo repository.IJournalEntryRepository
+	coaRepo          repository.ICOARepository
+	fiscalYearRepo   repository.IFiscalYearRepository
 }
 
-func NewJournalEntryService(validate *validator.Validate, repo repository.IJournalEntryRepository, coaRepo repository.ICOARepository, fiscalRepo repository.IFiscalYearRepository) IJournalEntryService {
+func NewJournalEntryService(
+	validate *validator.Validate,
+	journalEntryRepo repository.IJournalEntryRepository,
+	coaRepo repository.ICOARepository,
+	fiscalYearRepo repository.IFiscalYearRepository,
+) IJournalEntryService {
 	return &JournalEntryService{
-		validate:                validate,
-		IJournalEntryRepository: repo,
-		ICOARepository:          coaRepo,
-		IFiscalYearRepository:   fiscalRepo,
+		validate:         validate,
+		journalEntryRepo: journalEntryRepo,
+		coaRepo:          coaRepo,
+		fiscalYearRepo:   fiscalYearRepo,
 	}
 }
 
-func (s *JournalEntryService) Create(companyID, userId uuid.UUID, req request.JournalEntryCreateRequest) (entity.JournalEntry, error) {
+func (s *JournalEntryService) Create(
+	companyID, userId uuid.UUID,
+	req request.JournalEntryCreateRequest,
+) (entity.JournalEntry, error) {
+
 	if len(req.Lines) < 2 {
-		return entity.JournalEntry{}, errors.New("journal entry must have at least 2 lines")
+		return entity.JournalEntry{}, errors.New(
+			"journal entry must have at least 2 lines",
+		)
 	}
 
-	var totalDebit, totalCredit float64
-	var lines []entity.JournalLine
+	var totalDebit float64
+	var totalCredit float64
+
+	lines := make([]entity.JournalLine, 0, len(req.Lines))
 
 	for _, lineReq := range req.Lines {
-		if (lineReq.Debit > 0 && lineReq.Credit > 0) || (lineReq.Debit == 0 && lineReq.Credit == 0) {
-			return entity.JournalEntry{}, errors.New("each line must have either debit or credit, not both or neither")
+		if (lineReq.Debit > 0 && lineReq.Credit > 0) ||
+			(lineReq.Debit == 0 && lineReq.Credit == 0) {
+			return entity.JournalEntry{}, errors.New(
+				"each line must have either debit or credit, not both or neither",
+			)
 		}
 
-		coa, err := s.ICOARepository.FindById(companyID, lineReq.CoaId)
+		coa, err := s.coaRepo.FindById(companyID, lineReq.CoaId)
 		if err != nil {
 			return entity.JournalEntry{}, errors.New("invalid coa_id")
 		}
+
 		if !coa.Active {
 			return entity.JournalEntry{}, errors.New("coa is inactive")
 		}
@@ -73,17 +90,26 @@ func (s *JournalEntryService) Create(companyID, userId uuid.UUID, req request.Jo
 	}
 
 	if math.Abs(totalDebit-totalCredit) > 0.0001 {
-		return entity.JournalEntry{}, errors.New("journal entry must be balanced (total debit = total credit)")
+		return entity.JournalEntry{}, errors.New(
+			"journal entry must be balanced (total debit = total credit)",
+		)
 	}
 
-	journalNum, err := s.IJournalEntryRepository.GenerateJournalNumber(companyID, req.Date, string(entity.JournalTypeGeneral))
+	journalNum, err := s.journalEntryRepo.GenerateJournalNumber(
+		companyID,
+		req.Date,
+		string(entity.JournalTypeGeneral),
+	)
 	if err != nil {
 		return entity.JournalEntry{}, err
 	}
 
-	var files []entity.File
+	files := make([]entity.File, 0, len(req.FileIds))
+
 	for _, fileId := range req.FileIds {
-		files = append(files, entity.File{Id: fileId})
+		files = append(files, entity.File{
+			Id: fileId,
+		})
 	}
 
 	journal := entity.JournalEntry{
@@ -100,52 +126,72 @@ func (s *JournalEntryService) Create(companyID, userId uuid.UUID, req request.Jo
 		Files:         files,
 	}
 
-	if err := s.IJournalEntryRepository.Create(&journal); err != nil {
+	if err := s.journalEntryRepo.Create(&journal); err != nil {
 		return entity.JournalEntry{}, err
 	}
 
-	// Reload to get preloaded COAs
-	createdJournal, _ := s.IJournalEntryRepository.FindById(companyID, journal.Id)
-	return response.FromJournalEntryEntity(createdJournal), nil
+	return response.NewJournalEntryResponse(journal), nil
 }
 
-func (s *JournalEntryService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
-	journals, total, err := s.IJournalEntryRepository.FindAll(companyID, qp)
+func (s *JournalEntryService) FindAll(
+	companyID uuid.UUID,
+	qp *util.QueryParams,
+) ([]entity.JournalEntry, int, error) {
+
+	journals, total, err := s.journalEntryRepo.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-	return response.FromJournalEntryEntities(journals), int(total), nil
+
+	return response.NewJournalEntryResponses(journals), int(total), nil
 }
 
-func (s *JournalEntryService) FindById(companyID, id uuid.UUID) (entity.JournalEntry, error) {
-	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
+func (s *JournalEntryService) FindById(
+	companyID, id uuid.UUID,
+) (entity.JournalEntry, error) {
+
+	journal, err := s.journalEntryRepo.FindById(companyID, id)
 	if err != nil {
 		return entity.JournalEntry{}, errors.New("journal entry not found")
 	}
-	return response.FromJournalEntryEntity(journal), nil
+
+	return response.NewJournalEntryResponse(journal), nil
 }
 
-func (s *JournalEntryService) Update(companyID uuid.UUID, req request.JournalEntryUpdateRequest) (entity.JournalEntry, error) {
-	journal, err := s.IJournalEntryRepository.FindById(companyID, req.Id)
+func (s *JournalEntryService) Update(
+	companyID uuid.UUID,
+	req request.JournalEntryUpdateRequest,
+) (entity.JournalEntry, error) {
+
+	journal, err := s.journalEntryRepo.FindById(companyID, req.Id)
 	if err != nil {
 		return entity.JournalEntry{}, errors.New("journal entry not found")
 	}
 
 	if journal.Status != entity.JournalStatusDraft {
-		return entity.JournalEntry{}, errors.New("only draft journal entries can be edited")
+		return entity.JournalEntry{}, errors.New(
+			"only draft journal entries can be edited",
+		)
 	}
 
-	var totalDebit, totalCredit float64
-	var lines []entity.JournalLine
+	var totalDebit float64
+	var totalCredit float64
+
+	lines := make([]entity.JournalLine, 0, len(req.Lines))
 
 	for _, lineReq := range req.Lines {
-		if (lineReq.Debit > 0 && lineReq.Credit > 0) || (lineReq.Debit == 0 && lineReq.Credit == 0) {
-			return entity.JournalEntry{}, errors.New("each line must have either debit or credit")
+		if (lineReq.Debit > 0 && lineReq.Credit > 0) ||
+			(lineReq.Debit == 0 && lineReq.Credit == 0) {
+			return entity.JournalEntry{}, errors.New(
+				"each line must have either debit or credit",
+			)
 		}
 
-		coa, err := s.ICOARepository.FindById(companyID, lineReq.CoaId)
+		coa, err := s.coaRepo.FindById(companyID, lineReq.CoaId)
 		if err != nil || !coa.Active {
-			return entity.JournalEntry{}, errors.New("invalid or inactive coa_id")
+			return entity.JournalEntry{}, errors.New(
+				"invalid or inactive coa_id",
+			)
 		}
 
 		totalDebit += lineReq.Debit
@@ -161,12 +207,17 @@ func (s *JournalEntryService) Update(companyID uuid.UUID, req request.JournalEnt
 	}
 
 	if math.Abs(totalDebit-totalCredit) > 0.0001 {
-		return entity.JournalEntry{}, errors.New("journal entry must be balanced")
+		return entity.JournalEntry{}, errors.New(
+			"journal entry must be balanced",
+		)
 	}
 
-	var files []entity.File
+	files := make([]entity.File, 0, len(req.FileIds))
+
 	for _, fileId := range req.FileIds {
-		files = append(files, entity.File{Id: fileId})
+		files = append(files, entity.File{
+			Id: fileId,
+		})
 	}
 
 	journal.Date = req.Date
@@ -176,59 +227,103 @@ func (s *JournalEntryService) Update(companyID uuid.UUID, req request.JournalEnt
 	journal.Lines = lines
 	journal.Files = files
 
-	if err := s.IJournalEntryRepository.Update(&journal); err != nil {
+	if err := s.journalEntryRepo.Update(&journal); err != nil {
 		return entity.JournalEntry{}, err
 	}
 
-	updatedJournal, _ := s.IJournalEntryRepository.FindById(companyID, journal.Id)
-	return response.FromJournalEntryEntity(updatedJournal), nil
+	updatedJournal, err := s.journalEntryRepo.FindById(
+		companyID,
+		journal.Id,
+	)
+	if err != nil {
+		return entity.JournalEntry{}, err
+	}
+
+	return response.NewJournalEntryResponse(updatedJournal), nil
 }
 
-func (s *JournalEntryService) Delete(companyID, id uuid.UUID) error {
-	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
+func (s *JournalEntryService) Delete(
+	companyID, id uuid.UUID,
+) error {
+
+	journal, err := s.journalEntryRepo.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
+
 	if journal.Status != entity.JournalStatusDraft {
-		return errors.New("only draft journal entries can be deleted")
+		return errors.New(
+			"only draft journal entries can be deleted",
+		)
 	}
-	return s.IJournalEntryRepository.Delete(companyID, id)
+
+	return s.journalEntryRepo.Delete(companyID, id)
 }
 
-func (s *JournalEntryService) Post(companyID, id uuid.UUID) error {
-	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
+func (s *JournalEntryService) Post(
+	companyID, id uuid.UUID,
+) error {
+
+	journal, err := s.journalEntryRepo.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
+
 	if journal.Status != entity.JournalStatusDraft {
-		return errors.New("only draft journal entries can be posted")
+		return errors.New(
+			"only draft journal entries can be posted",
+		)
 	}
+
 	if math.Abs(journal.TotalDebit-journal.TotalCredit) > 0.0001 {
-		return errors.New("journal entry must be balanced to be posted")
+		return errors.New(
+			"journal entry must be balanced to be posted",
+		)
 	}
 
-	period, err := s.fiscalRepo.GetOpenPeriodByDate(companyID, journal.Date.Format("2006-01-02"))
+	period, err := s.fiscalYearRepo.GetOpenPeriodByDate(
+		companyID,
+		journal.Date.Format("2006-01-02"),
+	)
 	if err != nil {
-		return errors.New("date does not fall within an open fiscal period")
+		return errors.New(
+			"date does not fall within an open fiscal period",
+		)
 	}
 
-	return s.IJournalEntryRepository.Post(companyID, id, period.Id)
+	return s.journalEntryRepo.Post(
+		companyID,
+		id,
+		period.Id,
+	)
 }
 
-func (s *JournalEntryService) Void(companyID, id uuid.UUID) error {
-	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
+func (s *JournalEntryService) Void(
+	companyID, id uuid.UUID,
+) error {
+
+	journal, err := s.journalEntryRepo.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
+
 	if journal.Status != entity.JournalStatusPosted {
-		return errors.New("only posted journal entries can be voided")
+		return errors.New(
+			"only posted journal entries can be voided",
+		)
 	}
-	return s.IJournalEntryRepository.Void(companyID, id)
+
+	return s.journalEntryRepo.Void(companyID, id)
 }
 
-func (s *JournalEntryService) Destroy(companyID uuid.UUID, ids []uuid.UUID) error {
+func (s *JournalEntryService) Destroy(
+	companyID uuid.UUID,
+	ids []uuid.UUID,
+) error {
+
 	if len(ids) == 0 {
 		return errors.New("no ids provided")
 	}
-	return s.IJournalEntryRepository.BulkDestroy(companyID, ids)
+
+	return s.journalEntryRepo.BulkDestroy(companyID, ids)
 }

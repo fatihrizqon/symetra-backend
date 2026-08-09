@@ -17,10 +17,28 @@ type JournalLineResponse struct {
 	Credit         float64      `json:"credit"`
 }
 
+func NewJournalLineResponse(e entity.JournalLine) JournalLineResponse {
+	resp := JournalLineResponse{
+		Id:             e.Id,
+		JournalEntryId: e.JournalEntryId,
+		CoaId:          e.CoaId,
+		Description:    e.Description,
+		Debit:          e.Debit,
+		Credit:         e.Credit,
+	}
+
+	if e.Coa != nil {
+		coaResp := NewCOAResponse(*e.Coa)
+		resp.Coa = &coaResp
+	}
+
+	return resp
+}
+
 type JournalEntryResponse struct {
 	Id             uuid.UUID             `json:"id"`
 	CompanyId      uuid.UUID             `json:"company_id"`
-	FiscalPeriodId *uuid.UUID            `json:"fiscal_period_id"`
+	FiscalPeriodId *uuid.UUID            `json:"fiscal_period_id,omitempty"`
 	JournalNumber  string                `json:"journal_number"`
 	Type           string                `json:"type"`
 	Date           time.Time             `json:"date"`
@@ -33,47 +51,8 @@ type JournalEntryResponse struct {
 	Files          []FileResponse        `json:"files,omitempty"`
 }
 
-func FromJournalLineEntity(e entity.JournalLine) JournalLineResponse {
-	res := JournalLineResponse{
-		Id:             e.Id,
-		JournalEntryId: e.JournalEntryId,
-		CoaId:          e.CoaId,
-		Description:    e.Description,
-		Debit:          e.Debit,
-		Credit:         e.Credit,
-	}
-	if e.Coa != nil {
-		res.Coa = &COAResponse{
-			Id:            e.Coa.Id,
-			Code:          e.Coa.Code,
-			Name:          e.Coa.Name,
-			IsContra:      e.Coa.IsContra,
-			NormalBalance: e.Coa.GetAbsoluteNormalBalance(),
-		}
-	}
-	return res
-}
-
-func FromJournalEntryEntity(e entity.JournalEntry) JournalEntryResponse {
-	var lines []JournalLineResponse
-	for _, line := range e.Lines {
-		lines = append(lines, FromJournalLineEntity(line))
-	}
-
-	var files []FileResponse
-	for _, file := range e.Files {
-		files = append(files, FileResponse{
-			Id:           file.Id,
-			OriginalName: file.OriginalName,
-			MimeType:     file.MimeType,
-			Size:         file.Size,
-			URL:          file.Path,
-			UploadedBy:   file.UploadedBy,
-			CreatedAt:    file.CreatedAt,
-		})
-	}
-
-	return JournalEntryResponse{
+func NewJournalEntryResponse(e entity.JournalEntry) JournalEntryResponse {
+	resp := JournalEntryResponse{
 		Id:             e.Id,
 		CompanyId:      e.CompanyId,
 		FiscalPeriodId: e.FiscalPeriodId,
@@ -85,15 +64,40 @@ func FromJournalEntryEntity(e entity.JournalEntry) JournalEntryResponse {
 		TotalDebit:     e.TotalDebit,
 		TotalCredit:    e.TotalCredit,
 		CreatedBy:      e.CreatedBy,
-		Lines:          lines,
-		Files:          files,
 	}
+
+	lines := make([]JournalLineResponse, 0, len(e.Lines))
+	for _, line := range e.Lines {
+		lines = append(lines, NewJournalLineResponse(line))
+	}
+	resp.Lines = lines
+
+	files := make([]FileResponse, 0, len(e.Files))
+	for _, file := range e.Files {
+		files = append(files, FileResponse{
+			Id:           file.Id,
+			OriginalName: file.OriginalName,
+			MimeType:     file.MimeType,
+			Size:         file.Size,
+			URL:          file.Path,
+			UploadedBy:   file.UploadedBy,
+			CreatedAt:    file.CreatedAt,
+		})
+	}
+	resp.Files = files
+
+	return resp
 }
 
-func FromJournalEntryEntities(entities []entity.JournalEntry) []JournalEntryResponse {
-	var responses []JournalEntryResponse
+func NewJournalEntryResponses(
+	entities []entity.JournalEntry,
+) []JournalEntryResponse {
+
+	responses := make([]JournalEntryResponse, 0, len(entities))
+
 	for _, e := range entities {
-		responses = append(responses, FromJournalEntryEntity(e))
+		responses = append(responses, NewJournalEntryResponse(e))
 	}
+
 	return responses
 }
