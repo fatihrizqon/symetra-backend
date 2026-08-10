@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
@@ -33,19 +32,13 @@ type InvoiceService struct {
 	IJournalEntryService            IJournalEntryService
 }
 
-func NewInvoiceService(
-	validate *validator.Validate,
-	invoiceRepo repository.IInvoiceRepository,
-	customerRepo repository.ICustomerRepository,
-	configRepo repository.ICompanyConfigurationRepository,
-	journalService IJournalEntryService,
-) IInvoiceService {
+func NewInvoiceService(validate *validator.Validate, IInvoiceRepository repository.IInvoiceRepository, ICustomerRepository repository.ICustomerRepository, ICompanyConfigurationRepository repository.ICompanyConfigurationRepository, IJournalEntryService IJournalEntryService) IInvoiceService {
 	return &InvoiceService{
 		validate:                        validate,
-		IInvoiceRepository:              invoiceRepo,
-		ICustomerRepository:             customerRepo,
-		ICompanyConfigurationRepository: configRepo,
-		IJournalEntryService:            journalService,
+		IInvoiceRepository:              IInvoiceRepository,
+		ICustomerRepository:             ICustomerRepository,
+		ICompanyConfigurationRepository: ICompanyConfigurationRepository,
+		IJournalEntryService:            IJournalEntryService,
 	}
 }
 
@@ -91,26 +84,20 @@ func (s *InvoiceService) Create(companyID, userId uuid.UUID, req request.Invoice
 }
 
 func (s *InvoiceService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int, error) {
-	invoices, total, err := s.IInvoiceRepository.FindAll(companyID, qp)
+	invoices, totalCount, err := s.IInvoiceRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-	results := make([]entity.Invoice, 0, len(invoices))
-	for _, i := range invoices {
-		resp := response.FromInvoiceEntity(i)
-		results = append(results, resp)
-	}
-
-	return resps, int(total), nil
+	return invoices, totalCount, nil
 }
 
-func (s *InvoiceService) FindById(companyID, id uuid.UUID) (entity.Invoice, error) {
+func (s *InvoiceService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Invoice, error) {
 	invoice, err := s.IInvoiceRepository.FindById(companyID, id)
 	if err != nil {
-		return entity.Invoice{}, errors.New("invoice not found")
+		return entity.Invoice{}, err
 	}
-	resp := response.FromInvoiceEntity(invoice)
-	return resp, nil
+
+	return invoice, nil
 }
 
 func (s *InvoiceService) Update(companyID uuid.UUID, req request.InvoiceUpdateRequest) (entity.Invoice, error) {
@@ -159,7 +146,7 @@ func (s *InvoiceService) Update(companyID uuid.UUID, req request.InvoiceUpdateRe
 		return entity.Invoice{}, err
 	}
 	updatedInvoice, _ := s.IInvoiceRepository.FindById(companyID, invoice.Id)
-	return response.FromInvoiceEntity(updatedInvoice), nil
+	return updatedInvoice, nil
 }
 
 func (s *InvoiceService) Delete(companyID uuid.UUID, id uuid.UUID) error {

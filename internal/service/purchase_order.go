@@ -29,11 +29,11 @@ type PurchaseOrderService struct {
 	IVendorRepository        repository.IVendorRepository
 }
 
-func NewPurchaseOrderService(validate *validator.Validate, repo repository.IPurchaseOrderRepository, vendorRepo repository.IVendorRepository) IPurchaseOrderService {
+func NewPurchaseOrderService(validate *validator.Validate, IPurchaseOrderRepository repository.IPurchaseOrderRepository, IVendorRepository repository.IVendorRepository) IPurchaseOrderService {
 	return &PurchaseOrderService{
 		validate:                 validate,
-		IPurchaseOrderRepository: repo,
-		IVendorRepository:        vendorRepo,
+		IPurchaseOrderRepository: IPurchaseOrderRepository,
+		IVendorRepository:        IVendorRepository,
 	}
 }
 
@@ -170,155 +170,20 @@ func (s *PurchaseOrderService) Create(companyID uuid.UUID, userId uuid.UUID, req
 }
 
 func (s *PurchaseOrderService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
-	pos, total, err := s.IPurchaseOrderRepository.FindAll(companyID, qp)
+	purchase_orders, totalCount, err := s.IPurchaseOrderRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	if total == 0 {
-		return []entity.PurchaseOrder{}, 0, nil
-	}
-
-	totalPages := (int(total) + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, int(total), nil
-	}
-
-	resps := make([]entity.PurchaseOrder, 0, len(pos))
-	for _, p := range pos {
-		respItems := make([]entity.PurchaseOrderItem, 0, len(p.Items))
-		for _, item := range p.Items {
-			respItems = append(respItems, entity.PurchaseOrderItem{
-				Id:            item.Id,
-				Description:   item.Description,
-				Qty:           item.Qty,
-				Price:         item.Price,
-				Discount:      item.Discount,
-				TaxApplicable: item.TaxApplicable,
-				Amount:        item.Amount,
-			})
-		}
-
-		resp := entity.PurchaseOrder{
-			Id:              p.Id,
-			CompanyId:       p.CompanyId,
-			PoNumber:        p.PoNumber,
-			VendorId:        p.VendorId,
-			PoDate:          p.PoDate,
-			ExpiryDate:      p.ExpiryDate,
-			Subtotal:        p.Subtotal,
-			DiscountTotal:   p.DiscountTotal,
-			Dpp:             p.Dpp,
-			TaxRate:         p.TaxRate,
-			TaxAmount:       p.TaxAmount,
-			GrandTotal:      p.GrandTotal,
-			Status:          p.Status,
-			Notes:           p.Notes,
-			ConvertedBillId: p.ConvertedBillId,
-			CreatedBy:       p.CreatedBy,
-			CreatedAt:       p.CreatedAt,
-			UpdatedAt:       p.UpdatedAt,
-			Items:           respItems,
-		}
-
-		if p.Vendor != nil {
-			vendor := entity.Vendor{
-				Id:        p.Vendor.Id,
-				CompanyId: p.Vendor.CompanyId,
-				Code:      p.Vendor.Code,
-				Name:      p.Vendor.Name,
-				Email:     p.Vendor.Email,
-				Phone:     p.Vendor.Phone,
-				Address:   p.Vendor.Address,
-				CoaId:     p.Vendor.CoaId,
-				Status:    p.Vendor.Status,
-				CreatedAt: p.Vendor.CreatedAt,
-				UpdatedAt: p.Vendor.UpdatedAt,
-			}
-			if p.Vendor.Coa != nil {
-				vendor.Coa = &entity.COA{
-					Id:       p.Vendor.Coa.Id,
-					Code:     p.Vendor.Coa.Code,
-					Name:     p.Vendor.Coa.Name,
-					IsContra: p.Vendor.Coa.IsContra,
-				}
-			}
-			resp.Vendor = &vendor
-		}
-
-		resps = append(resps, resp)
-	}
-
-	return resps, int(total), nil
+	return purchase_orders, totalCount, nil
 }
 
 func (s *PurchaseOrderService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.PurchaseOrder, error) {
-	po, err := s.IPurchaseOrderRepository.FindById(companyID, id)
+	purchase_order, err := s.IPurchaseOrderRepository.FindById(companyID, id)
 	if err != nil {
-		return entity.PurchaseOrder{}, errors.New("purchase order not found")
+		return entity.PurchaseOrder{}, err
 	}
 
-	respItems := make([]entity.PurchaseOrderItem, 0, len(po.Items))
-	for _, item := range po.Items {
-		respItems = append(respItems, entity.PurchaseOrderItem{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-		})
-	}
-
-	resp := entity.PurchaseOrder{
-		Id:              po.Id,
-		CompanyId:       po.CompanyId,
-		PoNumber:        po.PoNumber,
-		VendorId:        po.VendorId,
-		PoDate:          po.PoDate,
-		ExpiryDate:      po.ExpiryDate,
-		Subtotal:        po.Subtotal,
-		DiscountTotal:   po.DiscountTotal,
-		Dpp:             po.Dpp,
-		TaxRate:         po.TaxRate,
-		TaxAmount:       po.TaxAmount,
-		GrandTotal:      po.GrandTotal,
-		Status:          po.Status,
-		Notes:           po.Notes,
-		ConvertedBillId: po.ConvertedBillId,
-		CreatedBy:       po.CreatedBy,
-		CreatedAt:       po.CreatedAt,
-		UpdatedAt:       po.UpdatedAt,
-		Items:           respItems,
-	}
-
-	if po.Vendor != nil {
-		vendor := entity.Vendor{
-			Id:        po.Vendor.Id,
-			CompanyId: po.Vendor.CompanyId,
-			Code:      po.Vendor.Code,
-			Name:      po.Vendor.Name,
-			Email:     po.Vendor.Email,
-			Phone:     po.Vendor.Phone,
-			Address:   po.Vendor.Address,
-			CoaId:     po.Vendor.CoaId,
-			Status:    po.Vendor.Status,
-			CreatedAt: po.Vendor.CreatedAt,
-			UpdatedAt: po.Vendor.UpdatedAt,
-		}
-		if po.Vendor.Coa != nil {
-			vendor.Coa = &entity.COA{
-				Id:       po.Vendor.Coa.Id,
-				Code:     po.Vendor.Coa.Code,
-				Name:     po.Vendor.Coa.Name,
-				IsContra: po.Vendor.Coa.IsContra,
-			}
-		}
-		resp.Vendor = &vendor
-	}
-
-	return resp, nil
+	return purchase_order, nil
 }
 
 func (s *PurchaseOrderService) Update(companyID uuid.UUID, req request.PurchaseOrderUpdateRequest) (entity.PurchaseOrder, error) {

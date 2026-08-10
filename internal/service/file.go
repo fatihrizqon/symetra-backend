@@ -18,8 +18,8 @@ import (
 const maxFileSize = 5 * 1024 * 1024 // 5MB
 
 var allowedMimeTypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
+	"image/jpeg":      true,
+	"image/png":       true,
 	"application/pdf": true,
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
 }
@@ -30,14 +30,14 @@ type IFileService interface {
 }
 
 type FileService struct {
-	fileRepo repository.IFileRepository
-	storage  storage.IStorage
+	IFileRepository repository.IFileRepository
+	IStorage        storage.IStorage
 }
 
-func NewFileService(fileRepo repository.IFileRepository, store storage.IStorage) IFileService {
+func NewFileService(IFileRepository repository.IFileRepository, IStorage storage.IStorage) IFileService {
 	return &FileService{
-		fileRepo: fileRepo,
-		storage:  store,
+		IFileRepository: IFileRepository,
+		IStorage:        IStorage,
 	}
 }
 
@@ -56,7 +56,7 @@ func (s *FileService) Upload(ctx context.Context, file *multipart.FileHeader, up
 		return response.FileResponse{}, errors.New("file type not allowed: " + ext)
 	}
 
-	relativePath, err := s.storage.Save(ctx, file, "documents")
+	relativePath, err := s.IStorage.Save(ctx, file, "documents")
 	if err != nil {
 		return response.FileResponse{}, err
 	}
@@ -69,9 +69,9 @@ func (s *FileService) Upload(ctx context.Context, file *multipart.FileHeader, up
 		UploadedBy:   uploadedBy,
 	}
 
-	record, err = s.fileRepo.Create(record)
+	record, err = s.IFileRepository.Create(record)
 	if err != nil {
-		_ = s.storage.Delete(ctx, relativePath)
+		_ = s.IStorage.Delete(ctx, relativePath)
 		return response.FileResponse{}, errors.New("failed to save file metadata")
 	}
 
@@ -80,23 +80,23 @@ func (s *FileService) Upload(ctx context.Context, file *multipart.FileHeader, up
 		OriginalName: record.OriginalName,
 		MimeType:     record.MimeType,
 		Size:         record.Size,
-		URL:          s.storage.GetURL(record.Path),
+		URL:          s.IStorage.GetURL(record.Path),
 		UploadedBy:   record.UploadedBy,
 		CreatedAt:    record.CreatedAt,
 	}, nil
 }
 
 func (s *FileService) Delete(ctx context.Context, fileId uuid.UUID) error {
-	record, err := s.fileRepo.FindById(fileId)
+	record, err := s.IFileRepository.FindById(fileId)
 	if err != nil {
 		return errors.New("file not found")
 	}
 
-	if err := s.storage.Delete(ctx, record.Path); err != nil {
+	if err := s.IStorage.Delete(ctx, record.Path); err != nil {
 		return err
 	}
 
-	return s.fileRepo.Delete(fileId)
+	return s.IFileRepository.Delete(fileId)
 }
 
 func detectMimeType(file *multipart.FileHeader) (string, error) {

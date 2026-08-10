@@ -19,26 +19,26 @@ import (
 type IUserService interface {
 	Create(req request.UserCreateRequest) (entity.User, error)
 	FindAll(qp *util.QueryParams) ([]response.UserResponse, int, error)
-	FindById(reqId uuid.UUID) (response.UserResponse, error)
+	FindById(id uuid.UUID) (response.UserResponse, error)
 	Update(req request.UserUpdateRequest) (response.UserResponse, error)
-	Delete(reqId uuid.UUID) error
-	Lock(reqId uuid.UUID) (response.UserResponse, error)
-	Unlock(reqId uuid.UUID) (response.UserResponse, error)
+	Delete(id uuid.UUID) error
+	Lock(id uuid.UUID) (response.UserResponse, error)
+	Unlock(id uuid.UUID) (response.UserResponse, error)
 	UploadAvatar(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) (response.UserResponse, error)
 	Destroy(ids []uuid.UUID) error
 }
 
 type UserService struct {
 	validate        *validator.Validate
-	fileService     IFileService
+	IFileService    IFileService
 	IUserRepository repository.IUserRepository
 }
 
-func NewUserService(validate *validator.Validate, fileService IFileService, repo repository.IUserRepository) IUserService {
+func NewUserService(validate *validator.Validate, IFileService IFileService, IUserRepository repository.IUserRepository) IUserService {
 	return &UserService{
 		validate:        validate,
-		fileService:     fileService,
-		IUserRepository: repo,
+		IFileService:    IFileService,
+		IUserRepository: IUserRepository,
 	}
 }
 
@@ -106,8 +106,8 @@ func (s *UserService) FindAll(qp *util.QueryParams) ([]response.UserResponse, in
 	return resps, totalCount, nil
 }
 
-func (s *UserService) FindById(reqId uuid.UUID) (response.UserResponse, error) {
-	user, err := s.IUserRepository.FindById(reqId)
+func (s *UserService) FindById(id uuid.UUID) (response.UserResponse, error) {
+	user, err := s.IUserRepository.FindById(id)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
@@ -190,7 +190,7 @@ func (s *UserService) Update(req request.UserUpdateRequest) (response.UserRespon
 }
 
 func (s *UserService) UploadAvatar(ctx context.Context, userId uuid.UUID, file *multipart.FileHeader) (response.UserResponse, error) {
-	fileResp, err := s.fileService.Upload(ctx, file, userId)
+	fileResp, err := s.IFileService.Upload(ctx, file, userId)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
@@ -221,17 +221,17 @@ func (s *UserService) UploadAvatar(ctx context.Context, userId uuid.UUID, file *
 	return resp, nil
 }
 
-func (s *UserService) Delete(reqId uuid.UUID) error {
-	return s.IUserRepository.Delete(reqId)
+func (s *UserService) Delete(id uuid.UUID) error {
+	return s.IUserRepository.Delete(id)
 }
 
-func (s *UserService) Lock(reqId uuid.UUID) (response.UserResponse, error) {
-	u, err := s.IUserRepository.FindById(reqId)
+func (s *UserService) Lock(id uuid.UUID) (response.UserResponse, error) {
+	u, err := s.IUserRepository.FindById(id)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
 
-	if err := s.IUserRepository.UpdateStatus(reqId, 0); err != nil {
+	if err := s.IUserRepository.UpdateStatus(id, 0); err != nil {
 		return response.UserResponse{}, err
 	}
 
@@ -245,13 +245,13 @@ func (s *UserService) Lock(reqId uuid.UUID) (response.UserResponse, error) {
 		UpdatedAt: u.UpdatedAt,
 	}, nil
 }
-func (s *UserService) Unlock(reqId uuid.UUID) (response.UserResponse, error) {
-	u, err := s.IUserRepository.FindById(reqId)
+func (s *UserService) Unlock(id uuid.UUID) (response.UserResponse, error) {
+	u, err := s.IUserRepository.FindById(id)
 	if err != nil {
 		return response.UserResponse{}, err
 	}
 
-	if err := s.IUserRepository.UpdateStatus(reqId, 1); err != nil {
+	if err := s.IUserRepository.UpdateStatus(id, 1); err != nil {
 		return response.UserResponse{}, err
 	}
 

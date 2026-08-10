@@ -13,7 +13,7 @@ import (
 type IJournalEntryRepository interface {
 	Create(journal *entity.JournalEntry) error
 	FindById(companyID, id uuid.UUID) (entity.JournalEntry, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int64, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error)
 	Update(journal *entity.JournalEntry) error
 	Delete(companyID, id uuid.UUID) error
 	Post(companyID, id, fiscalPeriodId uuid.UUID) error
@@ -78,9 +78,9 @@ var journalSortColumns = map[string]string{
 	"updated_at":     "journal_entries.updated_at",
 }
 
-func (r *JournalEntryRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int64, error) {
+func (r *JournalEntryRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
 	var journals []entity.JournalEntry
-	var total int64
+	var totalCount int64
 	query := r.db.Model(&entity.JournalEntry{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
@@ -94,7 +94,7 @@ func (r *JournalEntryRepository) FindAll(companyID uuid.UUID, qp *util.QueryPara
 		query = query.Where("status = ?", statusValues[0])
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -113,7 +113,7 @@ func (r *JournalEntryRepository) FindAll(companyID uuid.UUID, qp *util.QueryPara
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Lines").Preload("Lines.Coa").Preload("Files").Find(&journals).Error
-	return journals, total, err
+	return journals, int(totalCount), err
 }
 
 func (r *JournalEntryRepository) Update(journal *entity.JournalEntry) error {

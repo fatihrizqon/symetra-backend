@@ -12,7 +12,7 @@ import (
 type IVendorRepository interface {
 	Create(vendor *entity.Vendor) error
 	FindById(companyID, id uuid.UUID) (entity.Vendor, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error)
 	Update(vendor *entity.Vendor) error
 	Delete(companyID, id uuid.UUID) error
 	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
@@ -45,9 +45,9 @@ var vendorSortColumns = map[string]string{
 	"updated_at": "vendors.updated_at",
 }
 
-func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int64, error) {
+func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error) {
 	var vendors []entity.Vendor
-	var total int64
+	var totalCount int64
 	query := r.db.Model(&entity.Vendor{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
@@ -55,7 +55,7 @@ func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([
 		query = query.Where("code ILIKE ? OR name ILIKE ? OR email ILIKE ?", searchLike, searchLike, searchLike)
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -74,7 +74,7 @@ func (r *VendorRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Coa").Find(&vendors).Error
-	return vendors, total, err
+	return vendors, int(totalCount), err
 }
 
 func (r *VendorRepository) Update(vendor *entity.Vendor) error {

@@ -11,15 +11,16 @@ import (
 )
 
 var coaGroupSortColumns = map[string]string{
-	"code":           "coa_groups.code",
-	"name":           "coa_groups.name",
-	"status":         "coa_groups.status",
-	"created_at":     "coa_groups.created_at",
-	"updated_at":     "coa_groups.updated_at",
+	"code":       "coa_groups.code",
+	"name":       "coa_groups.name",
+	"status":     "coa_groups.status",
+	"created_at": "coa_groups.created_at",
+	"updated_at": "coa_groups.updated_at",
 }
 
 type ICOAGroupRepository interface {
-	Create(entity.COAGroup) (entity.COAGroup, error)
+	WithTransaction(fn func(txRepo ICOAGroupRepository) error) error
+	Create(entity.COAGroup) error
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error)
 	FindById(companyID, entityId uuid.UUID) (entity.COAGroup, error)
 	FindByName(companyID uuid.UUID, name string) (entity.COAGroup, error)
@@ -38,11 +39,15 @@ func NewCOAGroupRepository(Db *gorm.DB) ICOAGroupRepository {
 	return &COAGroupRepository{Db: Db}
 }
 
-func (r *COAGroupRepository) Create(entity entity.COAGroup) (entity.COAGroup, error) {
-	err := r.Db.Transaction(func(tx *gorm.DB) error {
-		return tx.Create(&entity).Error
+func (r *COAGroupRepository) WithTransaction(fn func(txRepo ICOAGroupRepository) error) error {
+	return r.Db.Transaction(func(tx *gorm.DB) error {
+		txRepo := &COAGroupRepository{Db: tx}
+		return fn(txRepo)
 	})
-	return entity, err
+}
+
+func (r *COAGroupRepository) Create(entity entity.COAGroup) error {
+	return r.Db.Create(entity).Error
 }
 
 func (r *COAGroupRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error) {
@@ -134,4 +139,3 @@ func (r *COAGroupRepository) BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) e
 		return tx.Where("company_id = ? AND id IN ?", companyID, ids).Delete(&entity.COAGroup{}).Error
 	})
 }
-

@@ -15,9 +15,9 @@ import (
 type IFiscalYearService interface {
 	Create(companyID uuid.UUID, req request.FiscalYearCreateRequest) (entity.FiscalYear, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.FiscalYear, int, error)
-	FindById(companyID, id uuid.UUID) (entity.FiscalYear, error)
-	Activate(companyID, id uuid.UUID) (entity.FiscalYear, error)
-	ClosePeriod(companyID, periodId uuid.UUID, userID *uuid.UUID, req request.FiscalPeriodCloseRequest) (entity.FiscalPeriod, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.FiscalYear, error)
+	Activate(companyID uuid.UUID, id uuid.UUID) (entity.FiscalYear, error)
+	ClosePeriod(companyID uuid.UUID, periodId uuid.UUID, userID *uuid.UUID, req request.FiscalPeriodCloseRequest) (entity.FiscalPeriod, error)
 }
 
 type FiscalYearService struct {
@@ -25,10 +25,10 @@ type FiscalYearService struct {
 	IFiscalYearRepository repository.IFiscalYearRepository
 }
 
-func NewFiscalYearService(validate *validator.Validate, repo repository.IFiscalYearRepository) IFiscalYearService {
+func NewFiscalYearService(validate *validator.Validate, IFiscalYearRepository repository.IFiscalYearRepository) IFiscalYearService {
 	return &FiscalYearService{
 		validate:              validate,
-		IFiscalYearRepository: repo,
+		IFiscalYearRepository: IFiscalYearRepository,
 	}
 }
 
@@ -67,80 +67,16 @@ func (s *FiscalYearService) FindAll(companyID uuid.UUID, qp *util.QueryParams) (
 	if err != nil {
 		return nil, 0, err
 	}
-	results := make([]entity.FiscalYear, 0, len(fiscal_years))
-	for _, fiscal_year := range fiscal_years {
-		result := entity.FiscalYear{
-			Id:          fiscal_year.Id,
-			CompanyId:   fiscal_year.CompanyId,
-			Name:        fiscal_year.Name,
-			StartDate:   fiscal_year.StartDate,
-			EndDate:     fiscal_year.EndDate,
-			Status:      fiscal_year.Status,
-			PeriodType:  fiscal_year.PeriodType,
-			ClosingJEId: fiscal_year.ClosingJEId,
-			ClosedAt:    fiscal_year.ClosedAt,
-			CreatedAt:   fiscal_year.CreatedAt,
-			UpdatedAt:   fiscal_year.UpdatedAt,
-		}
-		if len(fiscal_year.Periods) > 0 {
-			var pResps []entity.FiscalPeriod
-			for _, period := range fiscal_year.Periods {
-				pResps = append(pResps, entity.FiscalPeriod{
-					Id:           period.Id,
-					FiscalYearId: period.FiscalYearId,
-					Name:         period.Name,
-					PeriodNumber: period.PeriodNumber,
-					StartDate:    period.StartDate,
-					EndDate:      period.EndDate,
-					Status:       period.Status,
-					CreatedAt:    period.CreatedAt,
-					UpdatedAt:    period.UpdatedAt,
-				})
-			}
-			result.Periods = pResps
-		}
-		results = append(results, result)
-	}
-	return results, totalCount, nil
+	return fiscal_years, totalCount, nil
 }
 
-func (s *FiscalYearService) FindById(companyID, id uuid.UUID) (entity.FiscalYear, error) {
+func (s *FiscalYearService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.FiscalYear, error) {
 	fiscal_year, err := s.IFiscalYearRepository.FindById(companyID, id)
 	if err != nil {
 		return entity.FiscalYear{}, err
 	}
 
-	result := entity.FiscalYear{
-		Id:          fiscal_year.Id,
-		CompanyId:   fiscal_year.CompanyId,
-		Name:        fiscal_year.Name,
-		StartDate:   fiscal_year.StartDate,
-		EndDate:     fiscal_year.EndDate,
-		Status:      fiscal_year.Status,
-		PeriodType:  fiscal_year.PeriodType,
-		ClosingJEId: fiscal_year.ClosingJEId,
-		ClosedAt:    fiscal_year.ClosedAt,
-		CreatedAt:   fiscal_year.CreatedAt,
-		UpdatedAt:   fiscal_year.UpdatedAt,
-	}
-	if len(fiscal_year.Periods) > 0 {
-		var pResps []entity.FiscalPeriod
-		for _, period := range fiscal_year.Periods {
-			pResps = append(pResps, entity.FiscalPeriod{
-				Id:           period.Id,
-				FiscalYearId: period.FiscalYearId,
-				Name:         period.Name,
-				PeriodNumber: period.PeriodNumber,
-				StartDate:    period.StartDate,
-				EndDate:      period.EndDate,
-				Status:       period.Status,
-				CreatedAt:    period.CreatedAt,
-				UpdatedAt:    period.UpdatedAt,
-			})
-		}
-		result.Periods = pResps
-	}
-	return result, nil
+	return fiscal_year, nil
 }
 
 func (s *FiscalYearService) Activate(companyID uuid.UUID, id uuid.UUID) (entity.FiscalYear, error) {

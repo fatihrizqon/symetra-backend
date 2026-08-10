@@ -12,7 +12,7 @@ import (
 type IInvoiceRepository interface {
 	Create(invoice *entity.Invoice) error
 	FindById(companyID, id uuid.UUID) (entity.Invoice, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int, error)
 	Update(invoice *entity.Invoice) error
 	Delete(companyID, id uuid.UUID) error
 	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
@@ -52,9 +52,9 @@ var invoiceSortColumns = map[string]string{
 	"updated_at":     "invoices.updated_at",
 }
 
-func (r *InvoiceRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int64, error) {
+func (r *InvoiceRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Invoice, int, error) {
 	var invoices []entity.Invoice
-	var total int64
+	var totalCount int64
 	query := r.db.Model(&entity.Invoice{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
@@ -66,7 +66,7 @@ func (r *InvoiceRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) (
 		query = query.Where("invoice_status = ?", statusValues[0])
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -85,7 +85,7 @@ func (r *InvoiceRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) (
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Customer").Find(&invoices).Error
-	return invoices, total, err
+	return invoices, int(totalCount), err
 }
 
 func (r *InvoiceRepository) Update(invoice *entity.Invoice) error {

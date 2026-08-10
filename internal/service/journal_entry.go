@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/request"
-	"github.com/fatihrizqon/gofiber-microservice/internal/delivery/http/response"
 	"github.com/fatihrizqon/gofiber-microservice/internal/entity"
 	"github.com/fatihrizqon/gofiber-microservice/internal/repository"
 	"github.com/fatihrizqon/gofiber-microservice/internal/util"
@@ -25,30 +24,22 @@ type IJournalEntryService interface {
 }
 
 type JournalEntryService struct {
-	validate         *validator.Validate
-	journalEntryRepo repository.IJournalEntryRepository
-	coaRepo          repository.ICOARepository
-	fiscalYearRepo   repository.IFiscalYearRepository
+	validate                *validator.Validate
+	IJournalEntryRepository repository.IJournalEntryRepository
+	ICOARepository          repository.ICOARepository
+	IFiscalYearRepository   repository.IFiscalYearRepository
 }
 
-func NewJournalEntryService(
-	validate *validator.Validate,
-	journalEntryRepo repository.IJournalEntryRepository,
-	coaRepo repository.ICOARepository,
-	fiscalYearRepo repository.IFiscalYearRepository,
-) IJournalEntryService {
+func NewJournalEntryService(validate *validator.Validate, IJournalEntryRepository repository.IJournalEntryRepository, ICOARepository repository.ICOARepository, IFiscalYearRepository repository.IFiscalYearRepository) IJournalEntryService {
 	return &JournalEntryService{
-		validate:         validate,
-		journalEntryRepo: journalEntryRepo,
-		coaRepo:          coaRepo,
-		fiscalYearRepo:   fiscalYearRepo,
+		validate:                validate,
+		IJournalEntryRepository: IJournalEntryRepository,
+		ICOARepository:          ICOARepository,
+		IFiscalYearRepository:   IFiscalYearRepository,
 	}
 }
 
-func (s *JournalEntryService) Create(
-	companyID, userId uuid.UUID,
-	req request.JournalEntryCreateRequest,
-) (entity.JournalEntry, error) {
+func (s *JournalEntryService) Create(companyID uuid.UUID, userId uuid.UUID, req request.JournalEntryCreateRequest) (entity.JournalEntry, error) {
 
 	if len(req.Lines) < 2 {
 		return entity.JournalEntry{}, errors.New(
@@ -69,7 +60,7 @@ func (s *JournalEntryService) Create(
 			)
 		}
 
-		coa, err := s.coaRepo.FindById(companyID, lineReq.CoaId)
+		coa, err := s.ICOARepository.FindById(companyID, lineReq.CoaId)
 		if err != nil {
 			return entity.JournalEntry{}, errors.New("invalid coa_id")
 		}
@@ -95,7 +86,7 @@ func (s *JournalEntryService) Create(
 		)
 	}
 
-	journalNum, err := s.journalEntryRepo.GenerateJournalNumber(
+	journalNum, err := s.IJournalEntryRepository.GenerateJournalNumber(
 		companyID,
 		req.Date,
 		string(entity.JournalTypeGeneral),
@@ -126,44 +117,32 @@ func (s *JournalEntryService) Create(
 		Files:         files,
 	}
 
-	if err := s.journalEntryRepo.Create(&journal); err != nil {
+	if err := s.IJournalEntryRepository.Create(&journal); err != nil {
 		return entity.JournalEntry{}, err
 	}
 
-	return response.NewJournalEntryResponse(journal), nil
+	return journal, nil
 }
 
-func (s *JournalEntryService) FindAll(
-	companyID uuid.UUID,
-	qp *util.QueryParams,
-) ([]entity.JournalEntry, int, error) {
-
-	journals, total, err := s.journalEntryRepo.FindAll(companyID, qp)
+func (s *JournalEntryService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.JournalEntry, int, error) {
+	journals, totalCount, err := s.IJournalEntryRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	return response.NewJournalEntryResponses(journals), int(total), nil
+	return journals, totalCount, nil
 }
 
-func (s *JournalEntryService) FindById(
-	companyID, id uuid.UUID,
-) (entity.JournalEntry, error) {
-
-	journal, err := s.journalEntryRepo.FindById(companyID, id)
+func (s *JournalEntryService) FindById(companyID, id uuid.UUID) (entity.JournalEntry, error) {
+	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return entity.JournalEntry{}, errors.New("journal entry not found")
 	}
 
-	return response.NewJournalEntryResponse(journal), nil
+	return journal, nil
 }
 
-func (s *JournalEntryService) Update(
-	companyID uuid.UUID,
-	req request.JournalEntryUpdateRequest,
-) (entity.JournalEntry, error) {
-
-	journal, err := s.journalEntryRepo.FindById(companyID, req.Id)
+func (s *JournalEntryService) Update(companyID uuid.UUID, req request.JournalEntryUpdateRequest) (entity.JournalEntry, error) {
+	journal, err := s.IJournalEntryRepository.FindById(companyID, req.Id)
 	if err != nil {
 		return entity.JournalEntry{}, errors.New("journal entry not found")
 	}
@@ -187,7 +166,7 @@ func (s *JournalEntryService) Update(
 			)
 		}
 
-		coa, err := s.coaRepo.FindById(companyID, lineReq.CoaId)
+		coa, err := s.ICOARepository.FindById(companyID, lineReq.CoaId)
 		if err != nil || !coa.Active {
 			return entity.JournalEntry{}, errors.New(
 				"invalid or inactive coa_id",
@@ -227,11 +206,11 @@ func (s *JournalEntryService) Update(
 	journal.Lines = lines
 	journal.Files = files
 
-	if err := s.journalEntryRepo.Update(&journal); err != nil {
+	if err := s.IJournalEntryRepository.Update(&journal); err != nil {
 		return entity.JournalEntry{}, err
 	}
 
-	updatedJournal, err := s.journalEntryRepo.FindById(
+	updatedJournal, err := s.IJournalEntryRepository.FindById(
 		companyID,
 		journal.Id,
 	)
@@ -239,14 +218,11 @@ func (s *JournalEntryService) Update(
 		return entity.JournalEntry{}, err
 	}
 
-	return response.NewJournalEntryResponse(updatedJournal), nil
+	return updatedJournal, nil
 }
 
-func (s *JournalEntryService) Delete(
-	companyID, id uuid.UUID,
-) error {
-
-	journal, err := s.journalEntryRepo.FindById(companyID, id)
+func (s *JournalEntryService) Delete(companyID uuid.UUID, id uuid.UUID) error {
+	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
@@ -257,14 +233,11 @@ func (s *JournalEntryService) Delete(
 		)
 	}
 
-	return s.journalEntryRepo.Delete(companyID, id)
+	return s.IJournalEntryRepository.Delete(companyID, id)
 }
 
-func (s *JournalEntryService) Post(
-	companyID, id uuid.UUID,
-) error {
-
-	journal, err := s.journalEntryRepo.FindById(companyID, id)
+func (s *JournalEntryService) Post(companyID, id uuid.UUID) error {
+	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
@@ -281,7 +254,7 @@ func (s *JournalEntryService) Post(
 		)
 	}
 
-	period, err := s.fiscalYearRepo.GetOpenPeriodByDate(
+	period, err := s.IFiscalYearRepository.GetOpenPeriodByDate(
 		companyID,
 		journal.Date.Format("2006-01-02"),
 	)
@@ -291,7 +264,7 @@ func (s *JournalEntryService) Post(
 		)
 	}
 
-	return s.journalEntryRepo.Post(
+	return s.IJournalEntryRepository.Post(
 		companyID,
 		id,
 		period.Id,
@@ -302,7 +275,7 @@ func (s *JournalEntryService) Void(
 	companyID, id uuid.UUID,
 ) error {
 
-	journal, err := s.journalEntryRepo.FindById(companyID, id)
+	journal, err := s.IJournalEntryRepository.FindById(companyID, id)
 	if err != nil {
 		return errors.New("journal entry not found")
 	}
@@ -313,7 +286,7 @@ func (s *JournalEntryService) Void(
 		)
 	}
 
-	return s.journalEntryRepo.Void(companyID, id)
+	return s.IJournalEntryRepository.Void(companyID, id)
 }
 
 func (s *JournalEntryService) Destroy(
@@ -325,5 +298,5 @@ func (s *JournalEntryService) Destroy(
 		return errors.New("no ids provided")
 	}
 
-	return s.journalEntryRepo.BulkDestroy(companyID, ids)
+	return s.IJournalEntryRepository.BulkDestroy(companyID, ids)
 }

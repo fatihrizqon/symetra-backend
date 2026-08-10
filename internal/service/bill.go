@@ -32,13 +32,13 @@ type BillService struct {
 	IJournalEntryService            IJournalEntryService
 }
 
-func NewBillService(billRepo repository.IBillRepository, vendorRepo repository.IVendorRepository, configRepo repository.ICompanyConfigurationRepository, journalService IJournalEntryService, validate *validator.Validate) IBillService {
+func NewBillService(validate *validator.Validate, IBillRepository repository.IBillRepository, IVendorRepository repository.IVendorRepository, ICompanyConfigurationRepository repository.ICompanyConfigurationRepository, IJournalEntryService IJournalEntryService) IBillService {
 	return &BillService{
 		validate:                        validate,
-		IBillRepository:                 billRepo,
-		IVendorRepository:               vendorRepo,
-		ICompanyConfigurationRepository: configRepo,
-		IJournalEntryService:            journalService,
+		IBillRepository:                 IBillRepository,
+		IVendorRepository:               IVendorRepository,
+		ICompanyConfigurationRepository: ICompanyConfigurationRepository,
+		IJournalEntryService:            IJournalEntryService,
 	}
 }
 
@@ -47,9 +47,9 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		return entity.Bill{}, err
 	}
 
-	var items []entity.BillItem
+	billItems := make([]entity.BillItem, 0, len(req.Items))
 	for _, item := range req.Items {
-		items = append(items, entity.BillItem{
+		billItems = append(billItems, entity.BillItem{
 			Description:   item.Description,
 			Qty:           item.Qty,
 			Price:         item.Price,
@@ -59,7 +59,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		})
 	}
 
-	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(items, req.TaxRate)
+	subtotal, discountTotal, dpp, taxAmount, grandTotal := s.calculateTotals(billItems, req.TaxRate)
 
 	bill := entity.Bill{
 		CompanyId:       companyID,
@@ -80,7 +80,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		PaymentStatus:   entity.PaymentStatusUnpaid,
 		Notes:           req.Notes,
 		CreatedBy:       authorID,
-		Items:           items,
+		Items:           billItems,
 	}
 
 	err := s.IBillRepository.WithTransaction(func(txRepo repository.IBillRepository) error {
@@ -90,77 +90,7 @@ func (s *BillService) Create(companyID uuid.UUID, authorID uuid.UUID, req reques
 		return entity.Bill{}, err
 	}
 
-	createdBill, err := s.IBillRepository.FindById(companyID, bill.Id)
-	if err != nil {
-		return entity.Bill{}, err
-	}
-
-	billItems := make([]entity.BillItem, 0, len(createdBill.Items))
-	for _, item := range createdBill.Items {
-		billItems = append(billItems, entity.BillItem{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-			AccountId:     item.AccountId,
-		})
-	}
-
-	results := entity.Bill{
-		Id:              createdBill.Id,
-		CompanyId:       createdBill.CompanyId,
-		BillNumber:      createdBill.BillNumber,
-		VendorId:        createdBill.VendorId,
-		PurchaseOrderId: createdBill.PurchaseOrderId,
-		BillDate:        createdBill.BillDate,
-		DueDate:         createdBill.DueDate,
-		Subtotal:        createdBill.Subtotal,
-		DiscountTotal:   createdBill.DiscountTotal,
-		Dpp:             createdBill.Dpp,
-		TaxRate:         createdBill.TaxRate,
-		TaxAmount:       createdBill.TaxAmount,
-		GrandTotal:      createdBill.GrandTotal,
-		AmountDue:       createdBill.AmountDue,
-		AmountPaid:      createdBill.AmountPaid,
-		BillStatus:      createdBill.BillStatus,
-		PaymentStatus:   createdBill.PaymentStatus,
-		Notes:           createdBill.Notes,
-		JournalEntryId:  createdBill.JournalEntryId,
-		CreatedBy:       createdBill.CreatedBy,
-		CreatedAt:       createdBill.CreatedAt,
-		UpdatedAt:       createdBill.UpdatedAt,
-		Items:           billItems,
-	}
-
-	if createdBill.Vendor != nil {
-		vendor := entity.Vendor{
-			Id:        createdBill.Vendor.Id,
-			CompanyId: createdBill.Vendor.CompanyId,
-			Code:      createdBill.Vendor.Code,
-			Name:      createdBill.Vendor.Name,
-			Email:     createdBill.Vendor.Email,
-			Phone:     createdBill.Vendor.Phone,
-			Address:   createdBill.Vendor.Address,
-			CoaId:     createdBill.Vendor.CoaId,
-			Status:    createdBill.Vendor.Status,
-			CreatedAt: createdBill.Vendor.CreatedAt,
-			UpdatedAt: createdBill.Vendor.UpdatedAt,
-		}
-		if createdBill.Vendor.Coa != nil {
-			vendor.Coa = &entity.COA{
-				Id:       createdBill.Vendor.Coa.Id,
-				Code:     createdBill.Vendor.Coa.Code,
-				Name:     createdBill.Vendor.Coa.Name,
-				IsContra: createdBill.Vendor.Coa.IsContra,
-			}
-		}
-		results.Vendor = &vendor
-	}
-
-	return results, nil
+	return bill, nil
 }
 
 func (s *BillService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Bill, int, error) {
@@ -169,160 +99,16 @@ func (s *BillService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]enti
 		return nil, 0, err
 	}
 
-	if totalCount == 0 {
-		return []entity.Bill{}, 0, nil
-	}
-
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, totalCount, nil
-	}
-
-	results := make([]entity.Bill, 0, len(bills))
-	for _, bill := range bills {
-		billItems := make([]entity.BillItem, 0, len(bill.Items))
-		for _, item := range bill.Items {
-			billItems = append(billItems, entity.BillItem{
-				Id:            item.Id,
-				Description:   item.Description,
-				Qty:           item.Qty,
-				Price:         item.Price,
-				Discount:      item.Discount,
-				TaxApplicable: item.TaxApplicable,
-				Amount:        item.Amount,
-				AccountId:     item.AccountId,
-			})
-		}
-
-		result := entity.Bill{
-			Id:              bill.Id,
-			CompanyId:       bill.CompanyId,
-			BillNumber:      bill.BillNumber,
-			VendorId:        bill.VendorId,
-			PurchaseOrderId: bill.PurchaseOrderId,
-			BillDate:        bill.BillDate,
-			DueDate:         bill.DueDate,
-			Subtotal:        bill.Subtotal,
-			DiscountTotal:   bill.DiscountTotal,
-			Dpp:             bill.Dpp,
-			TaxRate:         bill.TaxRate,
-			TaxAmount:       bill.TaxAmount,
-			GrandTotal:      bill.GrandTotal,
-			AmountDue:       bill.AmountDue,
-			AmountPaid:      bill.AmountPaid,
-			BillStatus:      bill.BillStatus,
-			PaymentStatus:   bill.PaymentStatus,
-			Notes:           bill.Notes,
-			JournalEntryId:  bill.JournalEntryId,
-			CreatedBy:       bill.CreatedBy,
-			CreatedAt:       bill.CreatedAt,
-			UpdatedAt:       bill.UpdatedAt,
-			Items:           billItems,
-		}
-
-		if bill.Vendor != nil {
-			vendor := entity.Vendor{
-				Id:        bill.Vendor.Id,
-				CompanyId: bill.Vendor.CompanyId,
-				Code:      bill.Vendor.Code,
-				Name:      bill.Vendor.Name,
-				Email:     bill.Vendor.Email,
-				Phone:     bill.Vendor.Phone,
-				Address:   bill.Vendor.Address,
-				CoaId:     bill.Vendor.CoaId,
-				Status:    bill.Vendor.Status,
-				CreatedAt: bill.Vendor.CreatedAt,
-				UpdatedAt: bill.Vendor.UpdatedAt,
-			}
-			if bill.Vendor.Coa != nil {
-				vendor.Coa = &entity.COA{
-					Id:       bill.Vendor.Coa.Id,
-					Code:     bill.Vendor.Coa.Code,
-					Name:     bill.Vendor.Coa.Name,
-					IsContra: bill.Vendor.Coa.IsContra,
-				}
-			}
-			result.Vendor = &vendor
-		}
-
-		results = append(results, result)
-	}
-
-	return results, totalCount, nil
+	return bills, totalCount, nil
 }
 
-func (s *BillService) FindById(companyID, id uuid.UUID) (entity.Bill, error) {
+func (s *BillService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Bill, error) {
 	bill, err := s.IBillRepository.FindById(companyID, id)
 	if err != nil {
 		return entity.Bill{}, err
 	}
 
-	billItems := make([]entity.BillItem, 0, len(bill.Items))
-	for _, item := range bill.Items {
-		billItems = append(billItems, entity.BillItem{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-			AccountId:     item.AccountId,
-		})
-	}
-
-	result := entity.Bill{
-		Id:              bill.Id,
-		CompanyId:       bill.CompanyId,
-		BillNumber:      bill.BillNumber,
-		VendorId:        bill.VendorId,
-		PurchaseOrderId: bill.PurchaseOrderId,
-		BillDate:        bill.BillDate,
-		DueDate:         bill.DueDate,
-		Subtotal:        bill.Subtotal,
-		DiscountTotal:   bill.DiscountTotal,
-		Dpp:             bill.Dpp,
-		TaxRate:         bill.TaxRate,
-		TaxAmount:       bill.TaxAmount,
-		GrandTotal:      bill.GrandTotal,
-		AmountDue:       bill.AmountDue,
-		AmountPaid:      bill.AmountPaid,
-		BillStatus:      bill.BillStatus,
-		PaymentStatus:   bill.PaymentStatus,
-		Notes:           bill.Notes,
-		JournalEntryId:  bill.JournalEntryId,
-		CreatedBy:       bill.CreatedBy,
-		CreatedAt:       bill.CreatedAt,
-		UpdatedAt:       bill.UpdatedAt,
-		Items:           billItems,
-	}
-
-	if bill.Vendor != nil {
-		vendor := entity.Vendor{
-			Id:        bill.Vendor.Id,
-			CompanyId: bill.Vendor.CompanyId,
-			Code:      bill.Vendor.Code,
-			Name:      bill.Vendor.Name,
-			Email:     bill.Vendor.Email,
-			Phone:     bill.Vendor.Phone,
-			Address:   bill.Vendor.Address,
-			CoaId:     bill.Vendor.CoaId,
-			Status:    bill.Vendor.Status,
-			CreatedAt: bill.Vendor.CreatedAt,
-			UpdatedAt: bill.Vendor.UpdatedAt,
-		}
-		if bill.Vendor.Coa != nil {
-			vendor.Coa = &entity.COA{
-				Id:       bill.Vendor.Coa.Id,
-				Code:     bill.Vendor.Coa.Code,
-				Name:     bill.Vendor.Coa.Name,
-				IsContra: bill.Vendor.Coa.IsContra,
-			}
-		}
-		result.Vendor = &vendor
-	}
-
-	return result, nil
+	return bill, nil
 }
 
 func (s *BillService) Update(companyID uuid.UUID, req request.BillUpdateRequest) (entity.Bill, error) {

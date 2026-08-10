@@ -84,13 +84,13 @@ func Bootstrap(deps *BootstrapConfig) {
 	coaService := service.NewCOAService(deps.Validate, coaRepository)
 	companyConfigurationService := service.NewCompanyConfigurationService(deps.Validate, companyConfigurationRepository)
 	fiscalYearService := service.NewFiscalYearService(deps.Validate, fiscalYearRepository)
-	journalEntryService := service.NewJournalEntryService(journalEntryRepository, coaRepository, fiscalYearRepository)
+	journalEntryService := service.NewJournalEntryService(deps.Validate, journalEntryRepository, coaRepository, fiscalYearRepository)
 	reportService := service.NewReportService(reportRepository, companyConfigurationRepository)
 	vendorService := service.NewVendorService(deps.Validate, vendorRepository)
 	customerService := service.NewCustomerService(deps.Validate, customerRepository)
-	purchaseOrderService := service.NewPurchaseOrderService(purchaseOrderRepository, vendorRepository)
-	billService := service.NewBillService(billRepository, vendorRepository, companyConfigurationRepository, journalEntryService, deps.Validate)
-	quotationService := service.NewQuotationService(quotationRepository, customerRepository)
+	purchaseOrderService := service.NewPurchaseOrderService(deps.Validate, purchaseOrderRepository, vendorRepository)
+	billService := service.NewBillService(deps.Validate, billRepository, vendorRepository, companyConfigurationRepository, journalEntryService)
+	quotationService := service.NewQuotationService(deps.Validate, quotationRepository, customerRepository)
 	invoiceService := service.NewInvoiceService(deps.Validate, invoiceRepository, customerRepository, companyConfigurationRepository, journalEntryService)
 
 	// ── Handlers ──────────────────────────────────────────────────────────────

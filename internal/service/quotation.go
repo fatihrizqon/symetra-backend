@@ -29,11 +29,11 @@ type QuotationService struct {
 	ICustomerRepository  repository.ICustomerRepository
 }
 
-func NewQuotationService(validate *validator.Validate, repo repository.IQuotationRepository, customerRepo repository.ICustomerRepository) IQuotationService {
+func NewQuotationService(validate *validator.Validate, IQuotationRepository repository.IQuotationRepository, ICustomerRepository repository.ICustomerRepository) IQuotationService {
 	return &QuotationService{
 		validate:             validate,
-		IQuotationRepository: repo,
-		ICustomerRepository:  customerRepo,
+		IQuotationRepository: IQuotationRepository,
+		ICustomerRepository:  ICustomerRepository,
 	}
 }
 
@@ -169,155 +169,20 @@ func (s *QuotationService) Create(companyID uuid.UUID, userId uuid.UUID, req req
 }
 
 func (s *QuotationService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int, error) {
-	quos, total, err := s.IQuotationRepository.FindAll(companyID, qp)
+	quotations, totalCount, err := s.IQuotationRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	if total == 0 {
-		return []entity.Quotation{}, 0, nil
-	}
-
-	totalPages := (int(total) + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, int(total), nil
-	}
-
-	resps := make([]entity.Quotation, 0, len(quos))
-	for _, q := range quos {
-		respItems := make([]entity.QuotationItem, 0, len(q.Items))
-		for _, item := range q.Items {
-			respItems = append(respItems, entity.QuotationItem{
-				Id:            item.Id,
-				Description:   item.Description,
-				Qty:           item.Qty,
-				Price:         item.Price,
-				Discount:      item.Discount,
-				TaxApplicable: item.TaxApplicable,
-				Amount:        item.Amount,
-			})
-		}
-
-		resp := entity.Quotation{
-			Id:                 q.Id,
-			CompanyId:          q.CompanyId,
-			QuotationNumber:    q.QuotationNumber,
-			CustomerId:         q.CustomerId,
-			QuotationDate:      q.QuotationDate,
-			ExpiryDate:         q.ExpiryDate,
-			Subtotal:           q.Subtotal,
-			DiscountTotal:      q.DiscountTotal,
-			Dpp:                q.Dpp,
-			TaxRate:            q.TaxRate,
-			TaxAmount:          q.TaxAmount,
-			GrandTotal:         q.GrandTotal,
-			Status:             q.Status,
-			Notes:              q.Notes,
-			ConvertedInvoiceId: q.ConvertedInvoiceId,
-			CreatedBy:          q.CreatedBy,
-			CreatedAt:          q.CreatedAt,
-			UpdatedAt:          q.UpdatedAt,
-			Items:              respItems,
-		}
-
-		if q.Customer != nil {
-			customer := entity.Customer{
-				Id:        q.Customer.Id,
-				CompanyId: q.Customer.CompanyId,
-				Code:      q.Customer.Code,
-				Name:      q.Customer.Name,
-				Email:     q.Customer.Email,
-				Phone:     q.Customer.Phone,
-				Address:   q.Customer.Address,
-				CoaId:     q.Customer.CoaId,
-				Status:    q.Customer.Status,
-				CreatedAt: q.Customer.CreatedAt,
-				UpdatedAt: q.Customer.UpdatedAt,
-			}
-			if q.Customer.Coa != nil {
-				customer.Coa = &entity.COA{
-					Id:       q.Customer.Coa.Id,
-					Code:     q.Customer.Coa.Code,
-					Name:     q.Customer.Coa.Name,
-					IsContra: q.Customer.Coa.IsContra,
-				}
-			}
-			resp.Customer = &customer
-		}
-
-		resps = append(resps, resp)
-	}
-
-	return resps, int(total), nil
+	return quotations, totalCount, nil
 }
 
 func (s *QuotationService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Quotation, error) {
-	q, err := s.IQuotationRepository.FindById(companyID, id)
+	quotation, err := s.IQuotationRepository.FindById(companyID, id)
 	if err != nil {
-		return entity.Quotation{}, errors.New("quotation not found")
+		return entity.Quotation{}, err
 	}
 
-	respItems := make([]entity.QuotationItem, 0, len(q.Items))
-	for _, item := range q.Items {
-		respItems = append(respItems, entity.QuotationItem{
-			Id:            item.Id,
-			Description:   item.Description,
-			Qty:           item.Qty,
-			Price:         item.Price,
-			Discount:      item.Discount,
-			TaxApplicable: item.TaxApplicable,
-			Amount:        item.Amount,
-		})
-	}
-
-	resp := entity.Quotation{
-		Id:                 q.Id,
-		CompanyId:          q.CompanyId,
-		QuotationNumber:    q.QuotationNumber,
-		CustomerId:         q.CustomerId,
-		QuotationDate:      q.QuotationDate,
-		ExpiryDate:         q.ExpiryDate,
-		Subtotal:           q.Subtotal,
-		DiscountTotal:      q.DiscountTotal,
-		Dpp:                q.Dpp,
-		TaxRate:            q.TaxRate,
-		TaxAmount:          q.TaxAmount,
-		GrandTotal:         q.GrandTotal,
-		Status:             q.Status,
-		Notes:              q.Notes,
-		ConvertedInvoiceId: q.ConvertedInvoiceId,
-		CreatedBy:          q.CreatedBy,
-		CreatedAt:          q.CreatedAt,
-		UpdatedAt:          q.UpdatedAt,
-		Items:              respItems,
-	}
-
-	if q.Customer != nil {
-		customer := entity.Customer{
-			Id:        q.Customer.Id,
-			CompanyId: q.Customer.CompanyId,
-			Code:      q.Customer.Code,
-			Name:      q.Customer.Name,
-			Email:     q.Customer.Email,
-			Phone:     q.Customer.Phone,
-			Address:   q.Customer.Address,
-			CoaId:     q.Customer.CoaId,
-			Status:    q.Customer.Status,
-			CreatedAt: q.Customer.CreatedAt,
-			UpdatedAt: q.Customer.UpdatedAt,
-		}
-		if q.Customer.Coa != nil {
-			customer.Coa = &entity.COA{
-				Id:       q.Customer.Coa.Id,
-				Code:     q.Customer.Coa.Code,
-				Name:     q.Customer.Coa.Name,
-				IsContra: q.Customer.Coa.IsContra,
-			}
-		}
-		resp.Customer = &customer
-	}
-
-	return resp, nil
+	return quotation, nil
 }
 
 func (s *QuotationService) Update(companyID uuid.UUID, req request.QuotationUpdateRequest) (entity.Quotation, error) {

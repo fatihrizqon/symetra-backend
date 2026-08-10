@@ -15,9 +15,9 @@ import (
 type ICOAGroupService interface {
 	Create(companyID uuid.UUID, req request.COAGroupCreateRequest) (entity.COAGroup, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error)
-	FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COAGroup, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.COAGroup, error)
 	Update(companyID uuid.UUID, req request.COAGroupUpdateRequest) (entity.COAGroup, error)
-	Delete(companyID uuid.UUID, reqId uuid.UUID) error
+	Delete(companyID uuid.UUID, id uuid.UUID) error
 	SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error)
 	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
@@ -27,10 +27,10 @@ type COAGroupService struct {
 	ICOAGroupRepository repository.ICOAGroupRepository
 }
 
-func NewCOAGroupService(validate *validator.Validate, repo repository.ICOAGroupRepository) ICOAGroupService {
+func NewCOAGroupService(validate *validator.Validate, ICOAGroupRepository repository.ICOAGroupRepository) ICOAGroupService {
 	return &COAGroupService{
 		validate:            validate,
-		ICOAGroupRepository: repo,
+		ICOAGroupRepository: ICOAGroupRepository,
 	}
 }
 
@@ -52,7 +52,14 @@ func (s *COAGroupService) Create(companyID uuid.UUID, req request.COAGroupCreate
 		Category:  req.Category,
 	}
 
-	return s.ICOAGroupRepository.Create(coa_group)
+	err := s.ICOAGroupRepository.WithTransaction(func(txRepo repository.ICOAGroupRepository) error {
+		return txRepo.Create(coa_group)
+	})
+	if err != nil {
+		return entity.COAGroup{}, err
+	}
+
+	return coa_group, nil
 }
 
 func (s *COAGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.COAGroup, int, error) {
@@ -60,21 +67,16 @@ func (s *COAGroupService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]
 	if err != nil {
 		return nil, 0, err
 	}
-	if totalCount == 0 {
-		return []entity.COAGroup{}, 0, nil
-	}
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, totalCount, nil
-	}
+
 	return coa_groups, totalCount, nil
 }
 
-func (s *COAGroupService) FindById(companyID uuid.UUID, reqId uuid.UUID) (entity.COAGroup, error) {
-	coa_group, err := s.ICOAGroupRepository.FindById(companyID, reqId)
+func (s *COAGroupService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.COAGroup, error) {
+	coa_group, err := s.ICOAGroupRepository.FindById(companyID, id)
 	if err != nil {
 		return entity.COAGroup{}, err
 	}
+
 	return coa_group, nil
 }
 
@@ -96,8 +98,8 @@ func (s *COAGroupService) Update(companyID uuid.UUID, req request.COAGroupUpdate
 	return coa_group, s.ICOAGroupRepository.Update(coa_group)
 }
 
-func (s *COAGroupService) Delete(companyID uuid.UUID, reqId uuid.UUID) error {
-	return s.ICOAGroupRepository.Delete(companyID, reqId)
+func (s *COAGroupService) Delete(companyID uuid.UUID, id uuid.UUID) error {
+	return s.ICOAGroupRepository.Delete(companyID, id)
 }
 
 func (s *COAGroupService) SelectDropdownList(companyID uuid.UUID, qp *util.QueryParams) ([]response.SelectDropdownListResponse, int, error) {

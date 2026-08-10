@@ -15,14 +15,14 @@ import (
 type ICompanyService interface {
 	Create(req request.CompanyCreateRequest, userId uuid.UUID) (entity.Company, error)
 	FindAll(qp *util.QueryParams) ([]entity.Company, int, error)
-	FindById(reqId uuid.UUID) (entity.Company, error)
+	FindById(id uuid.UUID) (entity.Company, error)
 	FindMyCompanies(userID uuid.UUID) ([]entity.Company, error)
 	FindMembersByCompany(companyID uuid.UUID) ([]entity.CompanyMember, error)
 	AssignMember(req request.AssignMemberRequest, invitedBy uuid.UUID) (entity.CompanyMember, error)
 	UpdateMemberRole(req request.UpdateMemberRoleRequest) error
 	RemoveMember(companyID uuid.UUID, userId uuid.UUID) error
 	Update(req request.CompanyUpdateRequest) (entity.Company, error)
-	Delete(reqId uuid.UUID) error
+	Delete(id uuid.UUID) error
 	SelectCompany(sessionID uuid.UUID, companyID uuid.UUID, userID uuid.UUID) (entity.Company, error)
 	GetActiveCompany(sessionID uuid.UUID) (entity.Company, error)
 	Destroy(ids []uuid.UUID) error
@@ -34,11 +34,11 @@ type CompanyService struct {
 	ITokenRepository   repository.ITokenRepository
 }
 
-func NewCompanyService(validate *validator.Validate, repo repository.ICompanyRepository, tokenRepo repository.ITokenRepository) ICompanyService {
+func NewCompanyService(validate *validator.Validate, ICompanyRepository repository.ICompanyRepository, ITokenRepository repository.ITokenRepository) ICompanyService {
 	return &CompanyService{
 		validate:           validate,
-		ICompanyRepository: repo,
-		ITokenRepository:   tokenRepo,
+		ICompanyRepository: ICompanyRepository,
+		ITokenRepository:   ITokenRepository,
 	}
 }
 
@@ -84,58 +84,16 @@ func (s *CompanyService) FindAll(qp *util.QueryParams) ([]entity.Company, int, e
 		return nil, 0, err
 	}
 
-	if totalCount == 0 {
-		return []entity.Company{}, 0, nil
-	}
-
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, totalCount, nil
-	}
-
-	results := make([]entity.Company, 0, len(companies))
-	for _, c := range companies {
-		result := entity.Company{
-			Id:        c.Id,
-			Name:      c.Name,
-			LegalName: c.LegalName,
-			TaxID:     c.TaxID,
-			Address:   c.Address,
-			Phone:     c.Phone,
-			Email:     c.Email,
-			Industry:  c.Industry,
-			Currency:  c.Currency,
-			CreatedBy: c.CreatedBy,
-			CreatedAt: c.CreatedAt,
-			UpdatedAt: c.UpdatedAt,
-		}
-		results = append(results, result)
-	}
-
-	return results, totalCount, nil
+	return companies, totalCount, nil
 }
 
-func (s *CompanyService) FindById(reqId uuid.UUID) (entity.Company, error) {
-	c, err := s.ICompanyRepository.FindById(reqId)
+func (s *CompanyService) FindById(id uuid.UUID) (entity.Company, error) {
+	company, err := s.ICompanyRepository.FindById(id)
 	if err != nil {
 		return entity.Company{}, err
 	}
 
-	resp := entity.Company{
-		Id:        c.Id,
-		Name:      c.Name,
-		LegalName: c.LegalName,
-		TaxID:     c.TaxID,
-		Address:   c.Address,
-		Phone:     c.Phone,
-		Email:     c.Email,
-		Industry:  c.Industry,
-		Currency:  c.Currency,
-		CreatedAt: c.CreatedAt,
-		UpdatedAt: c.UpdatedAt,
-	}
-
-	return resp, nil
+	return company, nil
 }
 
 func (s *CompanyService) FindMyCompanies(userId uuid.UUID) ([]entity.Company, error) {
@@ -323,8 +281,8 @@ func (s *CompanyService) Update(req request.CompanyUpdateRequest) (entity.Compan
 	}, nil
 }
 
-func (s *CompanyService) Delete(reqId uuid.UUID) error {
-	return s.ICompanyRepository.Delete(reqId)
+func (s *CompanyService) Delete(id uuid.UUID) error {
+	return s.ICompanyRepository.Delete(id)
 }
 
 func (s *CompanyService) SelectCompany(sessionID, companyID, userID uuid.UUID) (entity.Company, error) {

@@ -12,7 +12,7 @@ import (
 type IQuotationRepository interface {
 	Create(q *entity.Quotation) error
 	FindById(companyID, id uuid.UUID) (entity.Quotation, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int, error)
 	Update(q *entity.Quotation) error
 	Delete(companyID, id uuid.UUID) error
 	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
@@ -49,9 +49,9 @@ var quotationSortColumns = map[string]string{
 	"updated_at":       "quotations.updated_at",
 }
 
-func (r *QuotationRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int64, error) {
+func (r *QuotationRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Quotation, int, error) {
 	var qs []entity.Quotation
-	var total int64
+	var totalCount int64
 	query := r.db.Model(&entity.Quotation{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
@@ -63,7 +63,7 @@ func (r *QuotationRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams)
 		query = query.Where("status = ?", statusValues[0])
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -82,7 +82,7 @@ func (r *QuotationRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams)
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Customer").Find(&qs).Error
-	return qs, total, err
+	return qs, int(totalCount), err
 }
 
 func (r *QuotationRepository) Update(q *entity.Quotation) error {

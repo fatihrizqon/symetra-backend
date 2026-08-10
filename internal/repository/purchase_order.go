@@ -12,7 +12,7 @@ import (
 type IPurchaseOrderRepository interface {
 	Create(po *entity.PurchaseOrder) error
 	FindById(companyID, id uuid.UUID) (entity.PurchaseOrder, error)
-	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error)
+	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error)
 	Update(po *entity.PurchaseOrder) error
 	Delete(companyID, id uuid.UUID) error
 	BulkDestroy(companyID uuid.UUID, ids []uuid.UUID) error
@@ -49,9 +49,9 @@ var poSortColumns = map[string]string{
 	"updated_at": "purchase_orders.updated_at",
 }
 
-func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int64, error) {
+func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.PurchaseOrder, int, error) {
 	var pos []entity.PurchaseOrder
-	var total int64
+	var totalCount int64
 	query := r.db.Model(&entity.PurchaseOrder{}).Where("company_id = ?", companyID)
 
 	if qp.Search != "" {
@@ -63,7 +63,7 @@ func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryPar
 		query = query.Where("status = ?", statusValues[0])
 	}
 
-	if err := query.Count(&total).Error; err != nil {
+	if err := query.Count(&totalCount).Error; err != nil {
 		return nil, 0, err
 	}
 
@@ -82,7 +82,7 @@ func (r *PurchaseOrderRepository) FindAll(companyID uuid.UUID, qp *util.QueryPar
 	query = util.ApplyPagination(query, qp)
 
 	err := query.Preload("Vendor").Find(&pos).Error
-	return pos, total, err
+	return pos, int(totalCount), err
 }
 
 func (r *PurchaseOrderRepository) Update(po *entity.PurchaseOrder) error {

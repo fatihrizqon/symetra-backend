@@ -25,10 +25,10 @@ type CustomerService struct {
 	ICustomerRepository repository.ICustomerRepository
 }
 
-func NewCustomerService(validate *validator.Validate, repo repository.ICustomerRepository) ICustomerService {
+func NewCustomerService(validate *validator.Validate, ICustomerRepository repository.ICustomerRepository) ICustomerService {
 	return &CustomerService{
 		validate:            validate,
-		ICustomerRepository: repo,
+		ICustomerRepository: ICustomerRepository,
 	}
 }
 
@@ -91,71 +91,16 @@ func (s *CustomerService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]
 	if err != nil {
 		return nil, 0, err
 	}
-	if totalCount == 0 {
-		return []entity.Customer{}, 0, nil
-	}
-	totalPages := (totalCount + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, totalCount, nil
-	}
-	results := make([]entity.Customer, 0, len(customers))
-	for _, customer := range customers {
-		result := entity.Customer{
-			Id:        customer.Id,
-			CompanyId: customer.CompanyId,
-			Code:      customer.Code,
-			Name:      customer.Name,
-			Email:     customer.Email,
-			Phone:     customer.Phone,
-			Address:   customer.Address,
-			CoaId:     customer.CoaId,
-			Status:    customer.Status,
-			CreatedAt: customer.CreatedAt,
-			UpdatedAt: customer.UpdatedAt,
-		}
-
-		if customer.Coa != nil {
-			result.Coa = &entity.COA{
-				Id:       customer.Coa.Id,
-				Code:     customer.Coa.Code,
-				Name:     customer.Coa.Name,
-				IsContra: customer.Coa.IsContra,
-			}
-		}
-		results = append(results, result)
-	}
-
-	return results, totalCount, nil
+	return customers, totalCount, nil
 }
 
 func (s *CustomerService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Customer, error) {
 	customer, err := s.ICustomerRepository.FindById(companyID, id)
 	if err != nil {
-		return entity.Customer{}, errors.New("customer not found")
-	}
-	result := entity.Customer{
-		Id:        customer.Id,
-		CompanyId: customer.CompanyId,
-		Code:      customer.Code,
-		Name:      customer.Name,
-		Email:     customer.Email,
-		Phone:     customer.Phone,
-		Address:   customer.Address,
-		CoaId:     customer.CoaId,
-		Status:    customer.Status,
-		CreatedAt: customer.CreatedAt,
-		UpdatedAt: customer.UpdatedAt,
+		return entity.Customer{}, err
 	}
 
-	if customer.Coa != nil {
-		result.Coa = &entity.COA{
-			Id:       customer.Coa.Id,
-			Code:     customer.Coa.Code,
-			Name:     customer.Coa.Name,
-			IsContra: customer.Coa.IsContra,
-		}
-	}
-	return result, nil
+	return customer, nil
 }
 
 func (s *CustomerService) Update(companyID uuid.UUID, req request.CustomerUpdateRequest) (entity.Customer, error) {

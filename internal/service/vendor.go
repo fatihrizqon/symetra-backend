@@ -14,9 +14,9 @@ import (
 type IVendorService interface {
 	Create(companyID uuid.UUID, req request.VendorCreateRequest) (entity.Vendor, error)
 	FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error)
-	FindById(companyID, id uuid.UUID) (entity.Vendor, error)
+	FindById(companyID uuid.UUID, id uuid.UUID) (entity.Vendor, error)
 	Update(companyID uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error)
-	Delete(companyID, id uuid.UUID) error
+	Delete(companyID uuid.UUID, id uuid.UUID) error
 	Destroy(companyID uuid.UUID, ids []uuid.UUID) error
 }
 
@@ -25,10 +25,10 @@ type VendorService struct {
 	IVendorRepository repository.IVendorRepository
 }
 
-func NewVendorService(validate *validator.Validate, repo repository.IVendorRepository) IVendorService {
+func NewVendorService(validate *validator.Validate, IVendorRepository repository.IVendorRepository) IVendorService {
 	return &VendorService{
 		validate:          validate,
-		IVendorRepository: repo,
+		IVendorRepository: IVendorRepository,
 	}
 }
 
@@ -75,78 +75,20 @@ func (s *VendorService) Create(companyID uuid.UUID, req request.VendorCreateRequ
 }
 
 func (s *VendorService) FindAll(companyID uuid.UUID, qp *util.QueryParams) ([]entity.Vendor, int, error) {
-	vendors, total, err := s.IVendorRepository.FindAll(companyID, qp)
+	vendors, totalCount, err := s.IVendorRepository.FindAll(companyID, qp)
 	if err != nil {
 		return nil, 0, err
 	}
-
-	if total == 0 {
-		return []entity.Vendor{}, 0, nil
-	}
-
-	totalPages := (int(total) + qp.PageSize - 1) / qp.PageSize
-	if qp.Page > totalPages {
-		return nil, int(total), nil
-	}
-
-	resps := make([]entity.Vendor, 0, len(vendors))
-	for _, v := range vendors {
-		resp := entity.Vendor{
-			Id:        v.Id,
-			CompanyId: v.CompanyId,
-			Code:      v.Code,
-			Name:      v.Name,
-			Email:     v.Email,
-			Phone:     v.Phone,
-			Address:   v.Address,
-			CoaId:     v.CoaId,
-			Status:    v.Status,
-			CreatedAt: v.CreatedAt,
-			UpdatedAt: v.UpdatedAt,
-		}
-
-		if v.Coa != nil {
-			resp.Coa = &entity.COA{
-				Id:       v.Coa.Id,
-				Code:     v.Coa.Code,
-				Name:     v.Coa.Name,
-				IsContra: v.Coa.IsContra,
-			}
-		}
-		resps = append(resps, resp)
-	}
-
-	return resps, int(total), nil
+	return vendors, totalCount, nil
 }
 
-func (s *VendorService) FindById(companyID, id uuid.UUID) (entity.Vendor, error) {
+func (s *VendorService) FindById(companyID uuid.UUID, id uuid.UUID) (entity.Vendor, error) {
 	vendor, err := s.IVendorRepository.FindById(companyID, id)
 	if err != nil {
-		return entity.Vendor{}, errors.New("vendor not found")
-	}
-	resp := entity.Vendor{
-		Id:        vendor.Id,
-		CompanyId: vendor.CompanyId,
-		Code:      vendor.Code,
-		Name:      vendor.Name,
-		Email:     vendor.Email,
-		Phone:     vendor.Phone,
-		Address:   vendor.Address,
-		CoaId:     vendor.CoaId,
-		Status:    vendor.Status,
-		CreatedAt: vendor.CreatedAt,
-		UpdatedAt: vendor.UpdatedAt,
+		return entity.Vendor{}, err
 	}
 
-	if vendor.Coa != nil {
-		resp.Coa = &entity.COA{
-			Id:       vendor.Coa.Id,
-			Code:     vendor.Coa.Code,
-			Name:     vendor.Coa.Name,
-			IsContra: vendor.Coa.IsContra,
-		}
-	}
-	return resp, nil
+	return vendor, nil
 }
 
 func (s *VendorService) Update(companyID uuid.UUID, req request.VendorUpdateRequest) (entity.Vendor, error) {
